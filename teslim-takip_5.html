@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teslim Tarihi Takip — Çimtaş Machining</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F8FAFC; color: #0F1923; }
+:root {
+  --dark: #0F1923; --dark2: #1E2D3D; --dark3: #263749;
+  --amber: #F59E0B; --amber2: #D97706;
+  --green: #15803D; --red: #DC2626; --gray: #64748B; --lgray: #94A3B8;
+  --border: #E2E8F0; --bg: #F8FAFC; --white: #ffffff;
+}
+
+/* ── Layout ── */
+.page { min-height: 100vh; }
+.dark-page { min-height: 100vh; background: var(--dark); display: flex; align-items: center; justify-content: center; padding: 24px; }
+header { background: var(--dark); padding: 14px 24px; position: sticky; top: 0; z-index: 100; }
+header .inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+main { max-width: 1100px; margin: 0 auto; padding: 32px 16px; }
+main.narrow { max-width: 900px; }
+
+/* ── Logo ── */
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.logo-icon { width: 28px; height: 28px; background: var(--amber); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.logo-text { font-weight: 700; font-size: 14px; color: white; letter-spacing: -0.3px; }
+
+/* ── Buttons ── */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; transition: background 0.15s; }
+.btn-primary { background: var(--amber); color: var(--dark); }
+.btn-primary:hover { background: var(--amber2); }
+.btn-dark { background: var(--dark); color: white; }
+.btn-dark:hover { background: var(--dark2); }
+.btn-ghost { background: transparent; color: var(--lgray); font-weight: 500; }
+.btn-ghost:hover { color: white; }
+.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Cards ── */
+.card { background: white; border: 1px solid var(--border); border-radius: 14px; }
+.card-pad { padding: 20px; }
+
+/* ── Forms ── */
+input[type=text], input[type=date], input[type=password], textarea {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: 13px; font-family: inherit; background: white; color: var(--dark);
+  outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+}
+input:focus, textarea:focus { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
+input:disabled { background: #F1F5F9; color: var(--gray); }
+label.lbl { font-size: 11px; color: var(--gray); display: block; margin-bottom: 4px; }
+input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--amber); cursor: pointer; }
+input.err { border-color: var(--red); }
+
+/* ── Badges ── */
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+.badge-amber { background: #FEF3C7; color: #92400E; }
+.badge-green { background: #DCFCE7; color: #166534; }
+.badge-red { background: #FEE2E2; color: #991B1B; }
+.badge-blue { background: #DBEAFE; color: #1E40AF; }
+.badge-gray { background: #F1F5F9; color: var(--gray); }
+.badge-acil { background: #DC2626; color: white; font-weight: 800; letter-spacing: 0.5px; }
+
+/* ── Table ── */
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl th { text-align: left; padding: 8px 12px; background: #F1F5F9; color: var(--gray); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.tbl td { padding: 8px 12px; border-top: 1px solid var(--border); color: var(--dark); }
+.tbl tr:hover td { background: var(--bg); }
+.tbl tr.late td { background: #FEF2F2; }
+.mono { font-family: 'SF Mono', Consolas, monospace; }
+
+/* ── Progress ── */
+.prog { height: 6px; background: #F1F5F9; border-radius: 99px; overflow: hidden; width: 120px; }
+.prog-bar { height: 100%; border-radius: 99px; transition: width 0.3s; }
+.prog-amber { background: var(--amber); }
+.prog-green { background: var(--green); }
+.prog-red { background: var(--red); }
+
+/* ── Tabs ── */
+.tabs { display: flex; gap: 4px; background: white; border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+.tab { padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--gray); white-space: nowrap; transition: all 0.15s; }
+.tab.active { background: var(--dark); color: white; font-weight: 600; }
+
+/* ── Alert ── */
+.alert { padding: 12px 16px; border-radius: 10px; font-size: 13px; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+.alert-ok { background: #F0FDF4; border: 1px solid #BBF7D0; color: #166534; }
+.alert-err { background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; }
+.alert-warn { background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; }
+
+/* ── Upload zone ── */
+.upload-zone { border: 2px dashed var(--border); border-radius: 14px; padding: 32px; text-align: center; cursor: pointer; transition: border-color 0.2s; }
+.upload-zone:hover { border-color: var(--amber); }
+.upload-zone p { color: var(--gray); font-size: 13px; margin-top: 8px; }
+.upload-zone small { color: var(--lgray); font-size: 11px; }
+
+/* ── Divider ── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+/* ── Grid ── */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media(max-width:700px) { .grid2,.grid3,.grid4 { grid-template-columns: 1fr 1fr; } }
+@media(max-width:480px) { .grid2,.grid3,.grid4 { grid-template-columns: 1fr; } }
+
+/* ── Stat card ── */
+.stat { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.stat-val { font-size: 26px; font-weight: 700; }
+.stat-lbl { font-size: 11px; color: var(--lgray); margin-top: 2px; }
+
+/* ── Supplier row ── */
+.sup-row { display: flex; align-items: center; gap: 12px; padding: 14px 20px; cursor: pointer; transition: background 0.12s; }
+.sup-row:hover { background: var(--bg); }
+.sup-info { flex: 1; min-width: 0; }
+.sup-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sup-meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.sup-detail { background: var(--bg); border-top: 1px solid #F1F5F9; padding: 16px 20px; }
+
+/* ── Order card ── */
+.order-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.order-card.acil { border-color: #FECACA; background: #FFF5F5; }
+.order-card.done { border-color: #BBF7D0; }
+
+/* ── Misc ── */
+.flex { display: flex; align-items: center; }
+.gap4 { gap: 4px; } .gap8 { gap: 8px; } .gap12 { gap: 12px; } .gap16 { gap: 16px; }
+.flex-1 { flex: 1; }
+.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.text-right { text-align: right; }
+.mt4 { margin-top: 4px; } .mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; } .mt16 { margin-top: 16px; } .mt24 { margin-top: 24px; } .mt32 { margin-top: 32px; }
+.mb4 { margin-bottom: 4px; } .mb8 { margin-bottom: 8px; } .mb12 { margin-bottom: 12px; } .mb16 { margin-bottom: 16px; } .mb24 { margin-bottom: 24px; }
+.space-y > * + * { margin-top: 10px; }
+.hidden { display: none !important; }
+.text-sm { font-size: 13px; } .text-xs { font-size: 11px; } .text-lg { font-size: 17px; }
+.fw6 { font-weight: 600; } .fw7 { font-weight: 700; }
+.c-gray { color: var(--gray); } .c-lgray { color: var(--lgray); } .c-red { color: var(--red); } .c-green { color: var(--green); } .c-amber { color: #D97706; }
+.search-wrap { position: relative; margin-bottom: 12px; }
+.search-wrap input { padding-left: 34px; }
+.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--lgray); pointer-events: none; }
+.action-panel { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 14px; padding: 20px; margin-bottom: 24px; }
+.overflow-x { overflow-x: auto; }
+.rounded { border-radius: 10px; }
+.border { border: 1px solid var(--border); }
+
+/* ── Modal ── */
+.modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px; }
+.modal { background:white;border-radius:16px;max-width:600px;width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column; }
+.modal-header { padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; }
+.modal-body { padding:20px;overflow-y:auto;flex:1; }
+.modal-footer { padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end; }
+.mail-preview { background:#F8FAFC;border:1px solid var(--border);border-radius:10px;padding:14px;font-size:12px;line-height:1.7;white-space:pre-wrap;font-family:inherit;color:#334155; }
+.mail-field { margin-bottom:10px; }
+.mail-field label { font-size:11px;font-weight:700;color:var(--lgray);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:2px; }
+.mail-field p { font-size:13px;color:var(--dark); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     SUPABASE - Ortak veritabanı
+══════════════════════════════════════════════ -->
+<script>
+const SUPA_URL = "https://hmlxxeuxzakguhlmpyla.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtbHh4ZXV4emFrZ3VobG1weWxhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMjM4NDksImV4cCI6MjA5ODg5OTg0OX0.NvIrQeeqWS-cXdsOe3cwkGdBk2ZBRWTGcWyyAYJ8N40";
+
+async function supaFetch(path, opts) {
+  const res = await fetch(SUPA_URL + "/rest/v1/" + path, Object.assign({
+    headers: {
+      "apikey": SUPA_KEY,
+      "Authorization": "Bearer " + SUPA_KEY,
+      "Content-Type": "application/json",
+      "Prefer": "return=minimal"
+    }
+  }, opts));
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error("Supabase hata: " + err);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+// ── Siparişler ──
+async function getOrders() {
+  const rows = await supaFetch("siparisler?select=*&order=ted_no,talep_no", { method: "GET", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" } });
+  if (!rows) return [];
+  return rows.map(r => ({
+    id: r.id, talepTipi: r.talep_tipi, talepNo: r.talep_no, strNo: r.str_no,
+    malzKodu: r.malz_kodu, malzTanim: r.malz_tanim, origQty: r.orig_qty,
+    bagMiktar: r.bag_miktar, sozTarih: r.soz_tarih, tedNo: r.ted_no,
+    tedUnvan: r.ted_unvan, acil: r.acil
+  }));
+}
+
+async function saveOrders() {
+  const rows = window._pendingOrders || [];
+  const acilIds = new Set(window._pendingAcilSet || []);
+  if (!rows.length) return;
+
+  // Önce tüm siparişleri sil
+  await supaFetch("siparisler?id=neq.NONE", { method: "DELETE", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" } });
+
+  // Yeni siparişleri ekle (100'lük batch)
+  const mapped = rows.map(r => ({
+    id: r.id, talep_tipi: r.talepTipi, talep_no: r.talepNo, str_no: r.strNo,
+    malz_kodu: r.malzKodu, malz_tanim: r.malzTanim, orig_qty: r.origQty,
+    bag_miktar: r.bagMiktar, soz_tarih: r.sozTarih, ted_no: r.tedNo,
+    ted_unvan: r.tedUnvan, acil: acilIds.has(r.id)
+  }));
+
+  for (let i = 0; i < mapped.length; i += 100) {
+    await supaFetch("siparisler", {
+      method: "POST",
+      headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
+      body: JSON.stringify(mapped.slice(i, i + 100))
+    });
+  }
+
+  // Yükleme tarihini kaydet
+  await setAyar("uploadedAt", new Date().toISOString().slice(0, 10));
+  window._pendingOrders = null;
+  window._pendingAcilSet = null;
+  flash(rows.length + " satır kaydedildi.");
+  await renderOrdersTab();
+  document.getElementById("order-preview").classList.add("hidden");
+}
+
+async function toggleAcilDB(id, acil) {
+  await supaFetch("siparisler?id=eq." + encodeURIComponent(id), {
+    method: "PATCH",
+    headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ acil: acil })
+  });
+}
+
+// ── Yanıtlar ──
+async function getResponses() {
+  const rows = await supaFetch("yanıtlar?select=*", { method: "GET", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" } });
+  if (!rows) return {};
+  const map = {};
+  rows.forEach(r => { map[r.siparis_id] = { yeniTarih: r.yeni_tarih, not: r.not_, savedAt: r.saved_at }; });
+  return map;
+}
+
+async function saveResponse(id, yeniTarih, not) {
+  // Upsert
+  await supaFetch("yanıtlar", {
+    method: "POST",
+    headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ id: id, siparis_id: id, yeni_tarih: yeniTarih, not_: not, saved_at: new Date().toISOString() })
+  });
+}
+
+// ── Tedarikçiler ──
+async function getSuppliers() {
+  const rows = await supaFetch("tedarikciler?select=*", { method: "GET", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" } });
+  if (!rows) return {};
+  const map = {};
+  rows.forEach(r => { map[r.ted_no] = { tedNo: r.ted_no, name: r.ted_unvan, mail: r.mail }; });
+  return map;
+}
+
+async function upsertSupplier(tedNo, name, mail) {
+  await supaFetch("tedarikciler", {
+    method: "POST",
+    headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ ted_no: tedNo, ted_unvan: name, mail: mail })
+  });
+}
+
+async function deleteSupplierDB(tedNo) {
+  await supaFetch("tedarikciler?ted_no=eq." + encodeURIComponent(tedNo), {
+    method: "DELETE",
+    headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" }
+  });
+}
+
+// ── Ayarlar ──
+async function getAyar(key) {
+  const rows = await supaFetch("ayarlar?key=eq." + encodeURIComponent(key) + "&select=value", { method: "GET", headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" } });
+  return rows && rows.length > 0 ? rows[0].value : null;
+}
+
+async function setAyar(key, value) {
+  await supaFetch("ayarlar", {
+    method: "POST",
+    headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ key: key, value: value })
+  });
+}
+</script>
+
+<!-- ══════════════════════════════════════════════
+     HELPERS
+══════════════════════════════════════════════ -->
+<script>
+// Excel serial → YYYY-MM-DD (UTC, timezone kayması yok)
+function serialToISO(v) {
+  if (v === null || v === undefined || v === "") return "";
+  if (typeof v === "number" && v > 1) {
+    // Excel 1900 bug: 1-28 Şubat 1900 arası serial'lerde +1 düzeltmesi gerekir
+    const serial = v > 59 ? v : v + 1;
+    const msPerDay = 86400000;
+    const epoch = new Date(Date.UTC(1899, 11, 30));
+    const d = new Date(epoch.getTime() + serial * msPerDay);
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  }
+  if (typeof v === "string") {
+    // "2026-06-12" formatı
+    if (/^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10);
+    // "12.06.2026" formatı
+    if (/^\d{2}\.\d{2}\.\d{4}/.test(v)) {
+      const p = v.split("."); return p[2] + "-" + p[1] + "-" + p[0];
+    }
+  }
+  return "";
+}
+
+function fmtDate(iso) {
+  if (!iso) return "—";
+  const p = iso.split("-");
+  if (p.length !== 3) return iso;
+  return p[2] + "." + p[1] + "." + p[0];
+}
+
+function daysUntil(iso) {
+  if (!iso) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(iso + "T00:00:00");
+  return Math.floor((d - today) / 86400000);
+}
+
+function daysDiff(iso) {
+  if (!iso) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(iso + "T00:00:00");
+  return Math.floor((today - d) / 86400000);
+}
+
+function normalizeEmails(raw) {
+  if (!raw) return [];
+  return String(raw).split(/[;,]/).map(e => e.trim()).filter(e => e.includes("@"));
+}
+
+function buildLink(tedNo) {
+  return window.location.href.split("?")[0] + "?supplier=" + encodeURIComponent(String(tedNo));
+}
+
+// Excel dosyasını okuyup raw (sayısal tarihler dahil) array döndür
+function readExcelRaw(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wb = XLSX.read(e.target.result, { type: "array", raw: true });
+      res(wb);
+    };
+    reader.onerror = () => rej(reader.error);
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// Sipariş Excel ayrıştır
+// A=Talep Tipi, B=Talep No, C=Str No, D=JDE Malz.Kodu, E=Malzeme Tanımı,
+// F=Orig.Qty, G=Bağlanmamış Miktar, J=Söz Verilen Tarih(idx9), L=Tedarikçi No(idx11), M=Tedarikçi Ünvan(idx12)
+function parseOrderWb(wb) {
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true });
+  const result = [], errors = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || r.length < 13) continue;
+    const tedNo = String(r[11] || "").trim();
+    const talepNo = String(r[1] || "").trim();
+    const strNo = String(r[2] || "").trim();
+    if (!tedNo || !talepNo) continue;
+    result.push({
+      id: tedNo + "-" + talepNo + "-" + strNo,
+      talepTipi: String(r[0] || "").trim(),
+      talepNo, strNo,
+      malzKodu: String(r[3] || "").trim(),
+      malzTanim: String(r[4] || "").trim(),
+      origQty: String(r[5] || "").trim(),
+      bagMiktar: String(r[6] || "").trim(),
+      sozTarih: serialToISO(r[9]),
+      tedNo,
+      tedUnvan: String(r[12] || "").trim(),
+      acil: false,
+    });
+  }
+  return { result, errors };
+}
+
+// Tedarikçi Excel: A=No, B=Ünvan, C=Mail
+function parseSupplierWb(wb) {
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true });
+  const map = {};
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || !r[0]) continue;
+    const no = String(r[0]).trim();
+    if (!no) continue;
+    map[no] = { tedNo: no, name: String(r[1] || "").trim(), mail: String(r[2] || "").trim() };
+  }
+  return map;
+}
+
+function openMailto(mailto) {
+  const a = document.createElement("a");
+  a.href = mailto;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => document.body.removeChild(a), 500);
+}
+
+// Flash mesaj
+function flash(msg, type) {
+  const el = document.getElementById("flash");
+  if (!el) return;
+  el.textContent = msg;
+  el.className = "alert " + (type === "err" ? "alert-err" : type === "warn" ? "alert-warn" : "alert-ok");
+  el.classList.remove("hidden");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.add("hidden"), 4000);
+}
+
+// HTML escape
+function esc(s) { return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+// URL parametresi al
+function getParam(name) { return new URLSearchParams(window.location.search).get(name); }
+</script>
+
+<!-- ══════════════════════════════════════════════
+     ROUTER — hangi sayfa gösterilecek
+══════════════════════════════════════════════ -->
+<script>
+async function init() {
+  const supplier = getParam("supplier");
+  const view = getParam("view");
+
+  if (supplier) {
+    await showSupplierGate(decodeURIComponent(supplier));
+  } else if (view === "admin") {
+    await showAdmin();
+  } else if (view === "dashboard") {
+    await showDashboard();
+  } else {
+    showLanding();
+  }
+}
+
+function navigate(q) {
+  window.location.href = window.location.pathname + (q ? "?" + q : "");
+}
+
+// Mail önizleme modal'ı göster, onaylanırsa Outlook aç
+function showMailModal(opts) {
+  // opts: { to, subject, body, onConfirm }
+  const existing = document.getElementById("mail-modal");
+  if (existing) existing.remove();
+
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.id = "mail-modal";
+  modal.innerHTML = `
+  <div class="modal">
+    <div class="modal-header">
+      <span class="fw6">Mail Önizleme</span>
+      <button onclick="document.getElementById('mail-modal').remove()" style="background:none;border:none;cursor:pointer;color:#94A3B8;font-size:18px">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="mail-field"><label>Alıcı</label><p>${esc(opts.to)}</p></div>
+      <div class="mail-field"><label>Konu</label><p>${esc(opts.subject)}</p></div>
+      <div class="mail-field"><label>İçerik</label><div class="mail-preview">${esc(opts.body)}</div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" style="background:#F1F5F9;color:#64748B" onclick="document.getElementById('mail-modal').remove()">İptal</button>
+      <button class="btn btn-primary btn-sm" onclick="confirmMail()">✉ Outlook'ta Aç</button>
+    </div>
+  </div>`;
+
+  window.confirmMail = function() {
+    document.getElementById("mail-modal").remove();
+    opts.onConfirm();
+  };
+
+  document.body.appendChild(modal);
+  modal.addEventListener("click", e => { if (e.target === modal) modal.remove(); });
+}
+
+// Excel olarak indir (tüm satırlar)
+async function exportExcel() {
+  const orders = await getOrders();
+  const responses = await getResponses();
+
+  const headers = ["Talep Tipi","Talep No","Str No","JDE Malz. Kodu","Malzeme Tanımı","Orig. Qty","Bağlanmamış Miktar","Söz Verilen Tarih","Yeni Teslim Tarihi","Not","Tedarikçi No","Tedarikçi Ünvan","Durum"];
+  const data = [headers, ...orders.map(o => {
+    const r = responses[o.id] || {};
+    const durum = r.savedAt ? "Girildi" : daysUntil(o.sozTarih) < 0 ? "Gecikmiş" : "Bekliyor";
+    return [o.talepTipi, o.talepNo, o.strNo, o.malzKodu, o.malzTanim, o.origQty, o.bagMiktar, fmtDate(o.sozTarih), r.yeniTarih ? fmtDate(r.yeniTarih) : "", r.not || "", o.tedNo, o.tedUnvan, durum];
+  })];
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws["!cols"] = [8,10,8,14,30,10,14,14,14,20,10,30,10].map(w => ({ wch: w }));
+  XLSX.utils.book_append_sheet(wb, ws, "Teslim Takip");
+  XLSX.writeFile(wb, "Teslim_Takip_" + new Date().toISOString().slice(0,10) + ".xlsx");
+}
+</script>
+
+<!-- ══════════════════════════════════════════════
+     LANDING
+══════════════════════════════════════════════ -->
+<script>
+function showLanding() {
+  document.body.innerHTML = `
+  <div class="dark-page">
+    <div style="max-width:360px;width:100%;text-align:center">
+      <div style="display:flex;justify-content:center;margin-bottom:16px">
+        <div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F1923" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+      </div>
+      <h1 style="color:white;font-size:22px;font-weight:700;letter-spacing:-0.5px;margin-bottom:4px">Teslim Tarihi Takip</h1>
+      <p style="color:#64748B;font-size:13px;margin-bottom:32px">Çimtaş Machining</p>
+      <div class="space-y">
+        <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:14px;padding:12px" onclick="navigate('view=dashboard')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Pano
+        </button>
+        <button class="btn btn-dark" style="width:100%;justify-content:center;font-size:14px;padding:12px;margin-top:10px" onclick="navigate('view=admin')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Veri Yükle / Ayarlar
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+</script>
+
+<!-- ══════════════════════════════════════════════
+     SUPPLIER GATE + VIEW
+══════════════════════════════════════════════ -->
+<script>
+async function showSupplierGate(supplierId) {
+  const pwd = await getAyar("password") || "";
+  if (!pwd) { await showSupplierView(supplierId); return; }
+
+  document.body.innerHTML = `
+  <div class="dark-page">
+    <div style="max-width:360px;width:100%">
+      <div style="display:flex;justify-content:center;margin-bottom:24px">
+        <a class="logo" href="?"><div class="logo-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F1923" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div><span class="logo-text">Teslim Tarihi Takip</span></a>
+      </div>
+      <div style="background:#1E2D3D;border:1px solid #263749;border-radius:16px;padding:24px">
+        <label class="lbl" style="color:#94A3B8">Erişim şifresi</label>
+        <input id="pwd-input" type="password" placeholder="Şifrenizi girin" style="background:#0F1923;color:white;border-color:#263749" onkeydown="if(event.key==='Enter')checkPwd('${esc(supplierId)}')" />
+        <p id="pwd-err" class="hidden" style="color:#F87171;font-size:11px;margin-top:6px">Yanlış şifre.</p>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px" onclick="checkPwd('${esc(supplierId)}')">Devam</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function checkPwd(supplierId) {
+  const pwd = await getAyar("password") || "";
+  const input = document.getElementById("pwd-input").value;
+  if (input === pwd) { await showSupplierView(supplierId); }
+  else { document.getElementById("pwd-err").classList.remove("hidden"); document.getElementById("pwd-input").classList.add("err"); }
+}
+
+async function showSupplierView(supplierId) {
+  const allOrders = await getOrders();
+  const orders = allOrders.filter(o => o.tedNo === supplierId);
+  const responses = await getResponses();
+  const tedAdi = (orders[0] && orders[0].tedUnvan) || supplierId;
+
+  const acil = orders.filter(o => o.acil);
+  const normal = orders.filter(o => !o.acil);
+
+  function orderCardHTML(o) {
+    const r = responses[o.id] || {};
+    const isSubmitted = !!r.savedAt;
+    const until = daysUntil(o.sozTarih);
+    const isLate = until !== null && until < 0 && !r.yeniTarih;
+    return `
+    <div class="order-card ${o.acil ? "acil" : isSubmitted ? "done" : ""}" id="card-${o.id}">
+      <div class="flex gap8" style="margin-bottom:10px;flex-wrap:wrap">
+        ${o.acil ? '<span class="badge badge-acil">ACİL</span>' : ""}
+        ${isLate ? '<span class="badge badge-red">Tarih Geçmiş</span>' : ""}
+        ${isSubmitted ? '<span class="badge badge-green">✓ Gönderildi</span>' : ""}
+        <span class="badge badge-gray mono">${esc(o.talepTipi)} ${esc(o.talepNo)} / ${esc(o.strNo)}</span>
+      </div>
+      <div class="flex gap12" style="margin-bottom:12px;flex-wrap:wrap">
+        <div class="flex-1">
+          <p class="fw6 text-sm truncate">${esc(o.malzTanim)}</p>
+          <p class="text-xs c-lgray mono mt4">${esc(o.malzKodu)}</p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs c-lgray">Bağlanmamış</p>
+          <p class="fw6 text-sm">${esc(o.bagMiktar)}</p>
+        </div>
+      </div>
+      <div class="grid3" style="margin-bottom:8px">
+        <div>
+          <label class="lbl">Mevcut tarih</label>
+          <div style="padding:8px 12px;background:#F1F5F9;border-radius:8px;font-size:13px;color:#475569">${fmtDate(o.sozTarih)}</div>
+        </div>
+        <div>
+          <label class="lbl">Yeni teslim tarihi${isLate ? ' <span style="color:red">*</span>' : ""}</label>
+          <input type="date" id="date-${o.id}" value="${esc(r.yeniTarih || "")}" onchange="autoSave('${esc(o.id)}')" />
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn btn-dark" style="width:100%" id="savebtn-${o.id}" onclick="saveRow('${esc(o.id)}')" ${!r.yeniTarih ? "disabled" : ""}>
+            Gönder
+          </button>
+        </div>
+      </div>
+      <div>
+        <input type="text" id="not-${o.id}" placeholder="Not (opsiyonel)" value="${esc(r.not || "")}" onchange="autoSave('${esc(o.id)}')" />
+      </div>
+    </div>`;
+  }
+
+  document.body.innerHTML = `
+  <div class="page">
+    <header>
+      <div class="inner">
+        <a class="logo" href="?"><div class="logo-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F1923" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div><span class="logo-text">Teslim Tarihi Takip</span></a>
+        <span style="color:#94A3B8;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${esc(tedAdi)}</span>
+      </div>
+    </header>
+    <main class="narrow">
+      <div id="flash" class="hidden"></div>
+      ${orders.length === 0 ? '<div style="text-align:center;padding:60px 0;color:#94A3B8">Size ait açık sipariş bulunamadı.</div>' : `
+        <div style="margin-bottom:24px">
+          <h1 class="text-lg fw7" style="margin-bottom:4px">Açık Siparişler</h1>
+          <p class="text-sm c-gray">Her kalem için güncel teslim tarihinizi girin. Daha önce girdiğiniz tarihler korunmuştur.</p>
+        </div>
+        ${acil.length > 0 ? `
+          <div style="margin-bottom:24px">
+            <div class="flex gap8 mb12"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span style="font-size:12px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:0.5px">Acil Kalemler</span></div>
+            <div class="space-y">${acil.map(orderCardHTML).join("")}</div>
+          </div>
+        ` : ""}
+        ${normal.length > 0 ? `
+          ${acil.length > 0 ? '<p style="font-size:12px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">Diğer Siparişler</p>' : ""}
+          <div class="space-y">${normal.map(orderCardHTML).join("")}</div>
+        ` : ""}
+      `}
+    </main>
+  </div>`;
+
+  // Sayfa yüklendikten sonra buton state'lerini güncelle
+  orders.forEach(o => {
+    const dateInput = document.getElementById("date-" + o.id);
+    if (dateInput) dateInput.addEventListener("change", () => {
+      const btn = document.getElementById("savebtn-" + o.id);
+      if (btn) btn.disabled = !dateInput.value;
+    });
+  });
+
+  window._suppResponses = responses;
+  window._suppOrders = orders;
+}
+
+function autoSave(id) {
+  // Buton state güncelle
+  const dateEl = document.getElementById("date-" + id);
+  const btn = document.getElementById("savebtn-" + id);
+  if (btn && dateEl) btn.disabled = !dateEl.value;
+}
+
+async function saveRow(id) {
+  const dateEl = document.getElementById("date-" + id);
+  const notEl = document.getElementById("not-" + id);
+  const btn = document.getElementById("savebtn-" + id);
+  if (!dateEl || !dateEl.value) return;
+
+  if (btn) { btn.disabled = true; btn.textContent = "..."; }
+
+  await saveResponse(id, dateEl.value, notEl ? notEl.value : "");
+  const responses = await getResponses();
+  window._suppResponses = responses;
+
+  if (btn) { btn.textContent = "✓ Kaydedildi"; btn.style.background = "#15803D"; }
+  const card = document.getElementById("card-" + id);
+  if (card) { card.classList.remove("acil"); card.classList.add("done"); }
+
+  flash("Kaydedildi.");
+}
+</script>
+
+<!-- ══════════════════════════════════════════════
+     DASHBOARD
+══════════════════════════════════════════════ -->
+<script>
+async function showDashboard() {
+  const [orders, responses, supplierMap, uploadedAt, password] = await Promise.all([
+    getOrders(), getResponses(), getSuppliers(),
+    getAyar("uploadedAt"), getAyar("password")
+  ]);
+
+  const _orders = orders || [];
+  const _responses = responses || {};
+  const _smap = supplierMap || {};
+
+  // Tedarikçi bazında gruplama
+  const supMap = new Map();
+  _orders.forEach(o => {
+    if (!supMap.has(o.tedNo)) supMap.set(o.tedNo, { tedNo: o.tedNo, tedUnvan: o.tedUnvan, orders: [] });
+    supMap.get(o.tedNo).orders.push(o);
+  });
+
+  const suppliers = Array.from(supMap.values()).map(s => {
+    const submitted = s.orders.filter(o => _responses[o.id] && _responses[o.id].savedAt).length;
+    const total = s.orders.length;
+    const daysSinceUpload = daysDiff(uploadedAt);
+    const sup = _smap[s.tedNo] || {};
+    const mail = sup.mail || "";
+    let status = "bekliyor";
+    if (submitted === total && total > 0) status = "tamamlandi";
+    else if (submitted > 0) status = "kismi";
+    else if (daysSinceUpload !== null && daysSinceUpload >= 2) status = "gecikti";
+    const aksiyonlar = s.orders.filter(o => {
+      const r = _responses[o.id] || {};
+      const tarih = r.yeniTarih || o.sozTarih;
+      const until = daysUntil(tarih);
+      return (!r.savedAt && daysSinceUpload >= 2) ||
+             (until !== null && until < 0 && !r.savedAt) ||
+             (until === 1 && !r.savedAt);
+    });
+    return Object.assign({}, s, { submitted, total, status, mail, daysSinceUpload, aksiyonlar });
+  });
+
+  const totals = {
+    toplam: suppliers.length,
+    tamamlandi: suppliers.filter(s => s.status === "tamamlandi").length,
+    gecikti: suppliers.filter(s => s.status === "gecikti").length,
+    aksiyon: suppliers.filter(s => s.aksiyonlar.length > 0 && s.status !== "tamamlandi").reduce((a, s) => a + s.aksiyonlar.length, 0)
+  };
+
+  const aksiyonGerekenler = suppliers.filter(s => s.aksiyonlar.length > 0 && s.status !== "tamamlandi");
+
+  function statusBadge(status) {
+    const map = { bekliyor: ["badge-amber","Bekliyor"], kismi: ["badge-blue","Kısmi"], tamamlandi: ["badge-green","Tamamlandı"], gecikti: ["badge-red","Gecikti"] };
+    const [cls, lbl] = map[status] || map.bekliyor;
+    return `<span class="badge ${cls}">${lbl}</span>`;
+  }
+
+  function openMailModal(s, tip) {
+    const link = buildLink(s.tedNo);
+    const emails = normalizeEmails(s.mail).join("; ");
+    let subject, body;
+    if (tip === "hatirlatma") {
+      subject = "Acik Siparis Listesi - Teslim Tarihi Guncelleme - " + s.tedUnvan;
+      body = "Merhaba,\n\nAsagidaki linkten acik siparis satirlariniz icin guncel teslim tarihlerini girmenizi rica ederiz.\n\nForm Linki: " + link + (password ? "\nErisim Sifresi: " + password : "") + "\n\nKonuya iliskin aciklamalar icin formdaki not alanini kullanabilirsiniz.\n\nSaygilarimizla\nCimtas Hassas Isleme";
+    } else {
+      const secili = s.orders.filter(o => document.getElementById("chk-"+o.id) && document.getElementById("chk-"+o.id).checked);
+      const liste = secili.map(o => "- [" + o.malzKodu + "] " + o.malzTanim + " (" + o.talepNo + "/" + o.strNo + ")").join("\n");
+      subject = "ACIL: Siparis Hizlandirma Talebi - " + s.tedUnvan;
+      body = "Merhaba,\n\nAsagidaki kalemlerin teslimatinin hizlandirilmasini talep ediyoruz:\n\n" + liste + "\n\nEn kisa surede donus yapmanizi rica ederiz.\n\nSaygilarimizla\nCimtas Hassas Isleme";
+    }
+    showMailModal({
+      to: emails,
+      subject,
+      body,
+      onConfirm: () => {
+        openMailto("mailto:" + normalizeEmails(s.mail).join(";") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body));
+      }
+    });
+  }
+
+  function supRowHTML(s) {
+    const pct = s.total > 0 ? Math.round(s.submitted / s.total * 100) : 0;
+    const barClass = s.status === "tamamlandi" ? "prog-green" : s.status === "gecikti" ? "prog-red" : "prog-amber";
+    return `
+    <div id="suprow-${s.tedNo}">
+      <div class="sup-row" onclick="toggleDetail('${esc(s.tedNo)}')">
+        <div class="sup-info">
+          <div class="flex gap8 mb4" style="flex-wrap:wrap">
+            <span class="sup-name" style="max-width:300px">${esc(s.tedUnvan)}</span>
+            ${statusBadge(s.status)}
+            ${s.aksiyonlar.length > 0 && s.status !== "tamamlandi" ? `<span class="badge badge-amber">🔔 ${s.aksiyonlar.length}</span>` : ""}
+          </div>
+          <div class="flex gap8">
+            <div class="prog"><div class="prog-bar ${barClass}" style="width:${pct}%"></div></div>
+            <span class="text-xs c-lgray">${s.submitted}/${s.total}</span>
+          </div>
+        </div>
+        <div class="flex gap8">
+          ${s.mail ? `<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();openMailModal(window._dashSuppliers.find(x=>x.tedNo==='${esc(s.tedNo)}'),'hatirlatma')" style="white-space:nowrap">✉ Mail</button>` : ""}
+          ${s.mail ? `<button class="btn btn-sm btn-dark" onclick="event.stopPropagation();hizlandir('${esc(s.tedNo)}')" id="hiz-${s.tedNo}" style="display:none">⚡ Hızlandır</button>` : ""}
+          <span id="chevron-${s.tedNo}" style="color:#94A3B8">▶</span>
+        </div>
+      </div>
+      <div id="detail-${s.tedNo}" class="hidden sup-detail">
+        <div class="overflow-x rounded border">
+          <table class="tbl">
+            <thead><tr>
+              <th><input type="checkbox" onchange="toggleAll('${esc(s.tedNo)}',this.checked)" /></th>
+              <th>Talep</th><th>Malz. Kodu</th><th>Malzeme Tanımı</th><th>Bağlanmamış</th>
+              <th>Mevcut Tarih</th><th>Yeni Tarih</th><th>Not</th><th>Durum</th>
+            </tr></thead>
+            <tbody>
+              ${s.orders.map(o => {
+                const r = _responses[o.id] || {};
+                const until = daysUntil(r.yeniTarih || o.sozTarih);
+                const late = until !== null && until < 0 && !r.savedAt;
+                return `<tr class="${late ? "late" : ""}">
+                  <td><input type="checkbox" id="chk-${o.id}" onchange="updateHizBtn('${esc(s.tedNo)}')" /></td>
+                  <td class="mono">${esc(o.talepTipi)} ${esc(o.talepNo)}/${esc(o.strNo)}</td>
+                  <td class="mono" style="color:#475569">${esc(o.malzKodu)}</td>
+                  <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(o.malzTanim)}</td>
+                  <td>${esc(o.bagMiktar)}</td>
+                  <td>${fmtDate(o.sozTarih)}</td>
+                  <td class="fw6">${r.yeniTarih ? fmtDate(r.yeniTarih) : "—"}</td>
+                  <td style="color:#64748B;max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.not || "—")}</td>
+                  <td>${r.savedAt ? '<span style="color:#15803D;font-size:11px;font-weight:600">✓ Girildi</span>' : late ? '<span style="color:#DC2626;font-size:11px">⚠ Gecikmiş</span>' : '<span style="color:#D97706;font-size:11px">⏳ Bekliyor</span>'}</td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <hr class="divider" />
+    </div>`;
+  }
+
+  document.body.innerHTML = `
+  <div class="page">
+    <header>
+      <div class="inner">
+        <a class="logo" href="?"><div class="logo-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F1923" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div><span class="logo-text">Teslim Tarihi Takip</span></a>
+        <div class="flex gap16">
+          <button class="btn btn-ghost btn-sm" onclick="exportExcel()">⬇ Excel</button>
+          <button class="btn btn-ghost btn-sm" onclick="navigate('view=admin')">Admin</button>
+          <button class="btn btn-ghost btn-sm" onclick="navigate('')">Ana Sayfa</button>
+        </div>
+      </div>
+    </header>
+    <main>
+      <div id="flash" class="hidden"></div>
+      <div class="grid4 mb24">
+        <div class="stat"><div class="stat-val">${totals.toplam}</div><div class="stat-lbl">Tedarikçi</div></div>
+        <div class="stat"><div class="stat-val c-green">${totals.tamamlandi}</div><div class="stat-lbl">Tamamlandı</div></div>
+        <div class="stat"><div class="stat-val c-red">${totals.gecikti}</div><div class="stat-lbl">Gecikti</div></div>
+        <div class="stat"><div class="stat-val c-amber">${totals.aksiyon}</div><div class="stat-lbl">Bugün Aksiyon</div></div>
+      </div>
+
+      ${aksiyonGerekenler.length > 0 ? `
+      <div class="action-panel mb24">
+        <div class="flex gap8 mb16">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="fw6 text-sm" style="color:#92400E">Bugün Aksiyon Gerekenler</span>
+        </div>
+        <div class="space-y">
+          ${aksiyonGerekenler.map(s => `
+          <div style="background:white;border:1px solid #FDE68A;border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:12px">
+            <div class="flex-1 min-w-0">
+              <p class="fw6 text-sm">${esc(s.tedUnvan)}</p>
+              <p class="text-xs c-lgray mt4">${s.aksiyonlar.length} kalem</p>
+              ${s.aksiyonlar.slice(0,3).map(o => {
+                const r = _responses[o.id] || {};
+                const tarih = r.yeniTarih || o.sozTarih;
+                const until = daysUntil(tarih);
+                let neden = !r.savedAt && s.daysSinceUpload >= 2 ? s.daysSinceUpload + " gündür yanıt yok" :
+                            until !== null && until < 0 && !r.savedAt ? Math.abs(until) + " gün gecikmiş" : "Yarın teslim";
+                return `<div class="text-xs mt4" style="color:#475569">• <span class="mono" style="color:#64748B">${esc(o.malzKodu)}</span> ${esc(o.malzTanim)} — <span style="color:#D97706;font-weight:600">${neden}</span></div>`;
+              }).join("")}
+              ${s.aksiyonlar.length > 3 ? `<div class="text-xs mt4 c-lgray">+${s.aksiyonlar.length-3} kalem daha</div>` : ""}
+            </div>
+            ${s.mail ? `<button class="btn btn-sm btn-primary" onclick="openMailModal(window._dashSuppliers.find(x=>x.tedNo==='${esc(s.tedNo)}'),'hatirlatma')" style="flex-shrink:0;white-space:nowrap">✉ Hatırlat</button>` : ""}
+          </div>`).join("")}
+        </div>
+      </div>` : ""}
+
+      <div class="search-wrap">
+        <span class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+        <input type="text" placeholder="Tedarikçi ara..." oninput="filterSuppliers(this.value)" />
+      </div>
+
+      <div class="card" id="sup-list">
+        ${suppliers.length === 0 ? '<div style="padding:40px;text-align:center;color:#94A3B8;font-size:13px">Henüz sipariş verisi yüklenmedi.</div>' : suppliers.map(supRowHTML).join("")}
+      </div>
+    </main>
+  </div>`;
+
+  window._dashSuppliers = suppliers;
+
+  // Hızlandır butonu için fonksiyonlar
+  window.toggleDetail = function(tedNo) {
+    const d = document.getElementById("detail-" + tedNo);
+    const c = document.getElementById("chevron-" + tedNo);
+    if (d.classList.contains("hidden")) { d.classList.remove("hidden"); c.textContent = "▼"; }
+    else { d.classList.add("hidden"); c.textContent = "▶"; }
+  };
+
+  window.toggleAll = function(tedNo, checked) {
+    const s = (window._dashSuppliers || []).find(x => x.tedNo === tedNo);
+    if (!s) return;
+    s.orders.forEach(o => { const el = document.getElementById("chk-" + o.id); if (el) el.checked = checked; });
+    updateHizBtn(tedNo);
+  };
+
+  window.updateHizBtn = function(tedNo) {
+    const s = (window._dashSuppliers || []).find(x => x.tedNo === tedNo);
+    if (!s) return;
+    const secili = s.orders.filter(o => { const el = document.getElementById("chk-"+o.id); return el && el.checked; });
+    const btn = document.getElementById("hiz-" + tedNo);
+    if (btn) {
+      btn.style.display = secili.length > 0 ? "" : "none";
+      btn.textContent = "⚡ Hızlandır (" + secili.length + ")";
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const liste = secili.map(o => "- [" + o.malzKodu + "] " + o.malzTanim + " (" + o.talepNo + "/" + o.strNo + ")").join("\n");
+        const subject = "ACIL: Siparis Hizlandirma Talebi - " + s.tedUnvan;
+        const body = "Merhaba,\n\nAsagidaki kalemlerin teslimatinin hizlandirilmasini talep ediyoruz:\n\n" + liste + "\n\nEn kisa surede donus yapmanizi rica ederiz.\n\nSaygilarimizla\nCimtas Hassas Isleme";
+        showMailModal({
+          to: normalizeEmails(s.mail).join("; "),
+          subject,
+          body,
+          onConfirm: () => {
+            openMailto("mailto:" + normalizeEmails(s.mail).join(";") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body));
+          }
+        });
+      };
+    }
+  };
+
+  window.copyLink = function(tedNo) {
+    const link = buildLink(tedNo);
+    navigator.clipboard && navigator.clipboard.writeText(link);
+    flash("Link kopyalandı.");
+  };
+
+  window.filterSuppliers = function(q) {
+    q = q.toLowerCase();
+    (window._dashSuppliers || []).forEach(s => {
+      const row = document.getElementById("suprow-" + s.tedNo);
+      if (!row) return;
+      const match = !q || s.tedUnvan.toLowerCase().includes(q) || s.tedNo.includes(q);
+      row.style.display = match ? "" : "none";
+    });
+  };
+}
+</script>
+
+<!-- ══════════════════════════════════════════════
+     ADMIN
+══════════════════════════════════════════════ -->
+<script>
+async function showAdmin() {
+  document.body.innerHTML = `
+  <div class="page">
+    <header>
+      <div class="inner">
+        <a class="logo" href="?"><div class="logo-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F1923" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div><span class="logo-text">Teslim Tarihi Takip</span></a>
+        <button class="btn btn-ghost btn-sm" onclick="navigate('view=dashboard')">Pano</button>
+      </div>
+    </header>
+    <main class="narrow">
+      <div id="flash" class="hidden"></div>
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('orders',this)">Sipariş Yükle</button>
+        <button class="tab" onclick="switchTab('acil',this)">Acil Kalemler</button>
+        <button class="tab" onclick="switchTab('suppliers',this)">Tedarikçi Listesi</button>
+        <button class="tab" onclick="switchTab('settings',this)">Ayarlar</button>
+      </div>
+      <div id="tab-orders"></div>
+      <div id="tab-acil" class="hidden"></div>
+      <div id="tab-suppliers" class="hidden"></div>
+      <div id="tab-settings" class="hidden"></div>
+    </main>
+  </div>`;
+
+  window.switchTab = function(name, btn) {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    btn.classList.add("active");
+    ["orders","acil","suppliers","settings"].forEach(t => {
+      document.getElementById("tab-"+t).classList.toggle("hidden", t !== name);
+    });
+    if (name === "orders") renderOrdersTab();
+    if (name === "acil") renderAcilTab();
+    if (name === "suppliers") renderSuppliersTab();
+    if (name === "settings") renderSettingsTab();
+  };
+
+  renderOrdersTab();
+}
+
+// ── Sipariş Yükle Tab ──
+async function renderOrdersTab() {
+  const orders = await getOrders();
+  const groups = {};
+  orders.forEach(o => {
+    if (!groups[o.tedNo]) groups[o.tedNo] = { tedUnvan: o.tedUnvan, count: 0 };
+    groups[o.tedNo].count++;
+  });
+
+  document.getElementById("tab-orders").innerHTML = `
+  <div>
+    <h2 class="text-lg fw7 mb4">Açık Sipariş Listesi Yükle</h2>
+    <p class="text-sm c-gray mb16">ERP'den çektiğiniz Excel dosyasını seçin. Her yüklemede eski veri güncellenir, tedarikçi yanıtları korunur.</p>
+    <div class="upload-zone mb16" onclick="document.getElementById('order-file').click()">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.5" style="margin:0 auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <p>Excel dosyası seç veya buraya sürükle</p>
+      <small>.xlsx veya .xls</small>
+      <input type="file" id="order-file" accept=".xlsx,.xls" style="display:none" onchange="handleOrderFile(this)" />
+    </div>
+    <div id="order-preview" class="hidden"></div>
+    ${Object.keys(groups).length > 0 ? `
+    <div class="mt24">
+      <h3 class="fw6 text-sm mb12">Kayıtlı Tedarikçi Linkleri</h3>
+      <div class="card">
+        ${Object.entries(groups).map(([tedNo, g]) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border)">
+          <div>
+            <p class="text-sm fw6">${esc(g.tedUnvan)}</p>
+            <p class="text-xs c-lgray">${g.count} satır</p>
+          </div>
+          <button class="btn btn-sm" style="background:#F1F5F9;color:#0F1923" onclick="navigator.clipboard&&navigator.clipboard.writeText('${esc(buildLink(tedNo))}');flash('Kopyalandı.')">Linki Kopyala</button>
+        </div>`).join("")}
+      </div>
+    </div>` : ""}
+  </div>`;
+}
+
+async function handleOrderFile(input) {
+  const file = input.files[0]; if (!file) return;
+  const prev = document.getElementById("order-preview");
+  prev.innerHTML = '<p class="text-sm c-gray">Okunuyor...</p>';
+  prev.classList.remove("hidden");
+
+  const wb = await readExcelRaw(file);
+  const { result, errors } = parseOrderWb(wb);
+
+  if (!result.length) { prev.innerHTML = '<div class="alert alert-err">Veri okunamadı. Sütun sırası doğru mu?</div>'; return; }
+
+  // Mevcut acil bilgilerini koru
+  const existing = await getOrders();
+  const acilSet = new Set(existing.filter(o => o.acil).map(o => o.id));
+
+  window._pendingOrders = result;
+  window._pendingAcilSet = [...acilSet];
+
+  prev.innerHTML = `
+  <div class="card card-pad">
+    <h3 class="fw6 mb12">Önizleme — ${result.length} satır</h3>
+    ${errors.length ? `<div class="alert alert-warn mb12">${errors.join("<br>")}</div>` : ""}
+    <div class="overflow-x rounded border mb16">
+      <table class="tbl">
+        <thead><tr><th>Tedarikçi</th><th>Talep</th><th>Malzeme Kodu</th><th>Malzeme</th><th>Miktar</th><th>Söz Verilen Tarih</th></tr></thead>
+        <tbody>
+          ${result.slice(0,8).map(r => `<tr>
+            <td>${esc(r.tedUnvan)}</td>
+            <td class="mono">${esc(r.talepTipi)} ${esc(r.talepNo)}/${esc(r.strNo)}</td>
+            <td class="mono" style="color:#475569">${esc(r.malzKodu)}</td>
+            <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.malzTanim)}</td>
+            <td>${esc(r.bagMiktar)}</td>
+            <td>${fmtDate(r.sozTarih)}</td>
+          </tr>`).join("")}
+          ${result.length > 8 ? `<tr><td colspan="6" style="color:#94A3B8;padding:8px 12px">...${result.length-8} satır daha</td></tr>` : ""}
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <p class="text-sm c-gray">Mevcut veri değişecek. Tedarikçi yanıtları <strong>korunur</strong>.</p>
+      <button class="btn btn-primary" onclick="saveOrders()">
+        ${result.length} satırı kaydet
+      </button>
+    </div>
+  </div>`;
+}
+
+async function saveOrders() {
+  const rows = window._pendingOrders || [];
+  const acilIds = window._pendingAcilSet || [];
+  if (!rows.length) return;
+  const acilSet = new Set(acilIds);
+  const final = rows.map(r => Object.assign({}, r, { acil: acilSet.has(r.id) }));
+  // saveOrders Supabase fonksiyonu olarak çağrılıyor
+  await saveOrders();
+}
+
+// ── Acil Kalemler Tab ──
+async function renderAcilTab() {
+  const orders = await getOrders();
+  if (!orders.length) {
+    document.getElementById("tab-acil").innerHTML = '<div class="card card-pad" style="text-align:center;color:#94A3B8">Önce sipariş yükleyin.</div>';
+    return;
+  }
+  const groups = new Map();
+  orders.forEach(o => { if (!groups.has(o.tedNo)) groups.set(o.tedNo, { tedUnvan: o.tedUnvan, orders: [] }); groups.get(o.tedNo).orders.push(o); });
+
+  document.getElementById("tab-acil").innerHTML = `
+  <div>
+    <h2 class="text-lg fw7 mb4">Acil Kalemler</h2>
+    <p class="text-sm c-gray mb12">İşaretlenen kalemler tedarikçi formunda kırmızı "ACİL" rozeti ile en üstte gösterilir.</p>
+    <div class="search-wrap mb16">
+      <span class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input type="text" placeholder="Tedarikçi, ürün kodu veya tanım ara..." oninput="filterAcil(this.value)" />
+    </div>
+    <div class="space-y" id="acil-list">
+      ${Array.from(groups.entries()).map(([tedNo, g]) => `
+      <div class="card" id="acilgroup-${esc(tedNo)}">
+        <div style="padding:12px 20px;background:#F8FAFC;border-bottom:1px solid var(--border)">
+          <p class="fw6 text-sm">${esc(g.tedUnvan)}</p>
+        </div>
+        <div>
+          ${g.orders.map(o => `
+          <label class="acil-item" data-search="${esc((g.tedUnvan + ' ' + o.malzKodu + ' ' + o.malzTanim).toLowerCase())}" style="display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseenter="this.style.background='#F8FAFC'" onmouseleave="this.style.background=''">
+            <input type="checkbox" id="acil-${o.id}" ${o.acil?"checked":""} onchange="toggleAcil('${esc(o.id)}')" />
+            <div style="flex:1;min-width:0">
+              <div class="flex gap8 mb4">
+                <span class="mono text-xs" style="color:#475569;background:#F1F5F9;padding:1px 6px;border-radius:4px">${esc(o.malzKodu)}</span>
+              </div>
+              <p class="text-sm truncate">${esc(o.malzTanim)}</p>
+              <p class="text-xs c-lgray mono mt4">${esc(o.talepTipi)} ${esc(o.talepNo)}/${esc(o.strNo)} — Miktar: ${esc(o.bagMiktar)}</p>
+            </div>
+            ${o.acil ? '<span class="badge badge-acil">ACİL</span>' : ""}
+          </label>`).join("")}
+        </div>
+      </div>`).join("")}
+    </div>
+  </div>`;
+
+  window.filterAcil = function(q) {
+    q = q.toLowerCase().trim();
+    document.querySelectorAll(".acil-item").forEach(item => {
+      const match = !q || item.dataset.search.includes(q);
+      item.style.display = match ? "" : "none";
+    });
+    // Hiç görünen kalemin olmadığı grupları gizle
+    document.querySelectorAll("[id^='acilgroup-']").forEach(grp => {
+      const visible = Array.from(grp.querySelectorAll(".acil-item")).some(i => i.style.display !== "none");
+      grp.style.display = visible ? "" : "none";
+    });
+  };
+
+  window.toggleAcil = async function(id) {
+    const orders = await getOrders();
+    const order = orders.find(o => o.id === id);
+    if (!order) return;
+    await toggleAcilDB(id, !order.acil);
+    flash("Kaydedildi.");
+    await renderAcilTab();
+  };
+}
+
+// ── Tedarikçi Listesi Tab ──
+async function renderSuppliersTab() {
+  const smap = await getSuppliers();
+  const list = Object.values(smap).sort((a,b) => (a.name||"").localeCompare(b.name||"","tr"));
+
+  document.getElementById("tab-suppliers").innerHTML = `
+  <div>
+    <h2 class="text-lg fw7 mb4">Tedarikçi Listesi</h2>
+    <p class="text-sm c-gray mb16">Mail gönderimi için tedarikçi no ve mail adresi eşleştirmesi. Excel ile toplu yükle veya tek tek düzenle.</p>
+    <div class="flex gap12 mb16" style="flex-wrap:wrap">
+      <div class="upload-zone" style="padding:14px 20px;flex:1;min-width:200px" onclick="document.getElementById('sup-file').click()">
+        <div class="flex gap8">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span class="text-sm c-gray">Excel ile toplu yükle / güncelle</span>
+        </div>
+        <input type="file" id="sup-file" accept=".xlsx,.xls" style="display:none" onchange="handleSupFile(this)" />
+      </div>
+      <button class="btn btn-dark" onclick="showAddSupplier()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Yeni Ekle</button>
+    </div>
+    <div id="add-supplier-form" class="hidden card card-pad mb16"></div>
+    <div class="card" id="sup-table">
+      ${list.length === 0 ? '<div style="padding:32px;text-align:center;color:#94A3B8;font-size:13px">Tedarikçi listesi boş.</div>' :
+        list.map(s => `
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border)" id="suprow-${s.tedNo}">
+          <div style="flex:1;min-width:0">
+            <div class="flex gap8"><span class="mono text-xs c-lgray">${esc(s.tedNo)}</span><span class="fw6 text-sm truncate">${esc(s.name)}</span></div>
+            <p class="text-xs mt4 truncate" style="color:${s.mail?"#64748B":"#DC2626"}">${esc(s.mail || "Mail adresi yok!")}</p>
+          </div>
+          <div class="flex gap8">
+            <button class="btn btn-sm" style="background:#F1F5F9;color:#0F1923" onclick="editSupplier('${esc(s.tedNo)}','${esc(s.name)}','${esc(s.mail)}')">Düzenle</button>
+            <button class="btn btn-sm" style="background:#FEF2F2;color:#DC2626" onclick="deleteSupplier('${esc(s.tedNo)}')">Sil</button>
+          </div>
+        </div>`).join("")
+      }
+    </div>
+  </div>`;
+
+  window.showAddSupplier = function() {
+    const f = document.getElementById("add-supplier-form");
+    f.classList.remove("hidden");
+    f.innerHTML = `
+    <h3 class="fw6 mb12">Yeni Tedarikçi</h3>
+    <div class="grid3 mb12">
+      <div><label class="lbl">Tedarikçi No *</label><input type="text" id="new-no" placeholder="12345" /></div>
+      <div><label class="lbl">Ünvan</label><input type="text" id="new-name" placeholder="Firma Adı" /></div>
+      <div><label class="lbl">Mail</label><input type="text" id="new-mail" placeholder="info@firma.com" /></div>
+    </div>
+    <div class="flex gap8">
+      <button class="btn btn-primary btn-sm" onclick="addSupplier()">Kaydet</button>
+      <button class="btn btn-sm" style="background:#F1F5F9;color:#64748B" onclick="document.getElementById('add-supplier-form').classList.add('hidden')">İptal</button>
+    </div>`;
+  };
+
+  window.addSupplier = async function() {
+    const no = document.getElementById("new-no").value.trim();
+    if (!no) { flash("Tedarikçi No zorunlu.", "err"); return; }
+    await upsertSupplier(no, document.getElementById("new-name").value.trim(), document.getElementById("new-mail").value.trim());
+    flash("Tedarikçi eklendi.");
+    await renderSuppliersTab();
+  };
+
+  window.editSupplier = function(no, name, mail) {
+    const row = document.getElementById("suprow-" + no);
+    if (!row) return;
+    row.innerHTML = `
+    <div style="flex:1;display:grid;grid-template-columns:1fr 2fr 3fr;gap:8px;min-width:0">
+      <input type="text" value="${esc(no)}" disabled style="background:#F1F5F9" />
+      <input type="text" id="edit-name-${no}" value="${esc(name)}" />
+      <input type="text" id="edit-mail-${no}" value="${esc(mail)}" />
+    </div>
+    <div class="flex gap8">
+      <button class="btn btn-primary btn-sm" onclick="saveEditSupplier('${esc(no)}')">Kaydet</button>
+      <button class="btn btn-sm" style="background:#F1F5F9;color:#64748B" onclick="renderSuppliersTab()">İptal</button>
+    </div>`;
+  };
+
+  window.saveEditSupplier = async function(no) {
+    await upsertSupplier(no, document.getElementById("edit-name-"+no).value.trim(), document.getElementById("edit-mail-"+no).value.trim());
+    flash("Güncellendi.");
+    await renderSuppliersTab();
+  };
+
+  window.deleteSupplier = async function(no) {
+    if (!confirm("Bu tedarikçiyi silmek istediğinize emin misiniz?")) return;
+    await deleteSupplierDB(no);
+    flash("Silindi.");
+    await renderSuppliersTab();
+  };
+}
+
+async function handleSupFile(input) {
+  const file = input.files[0]; if (!file) return;
+  const wb = await readExcelRaw(file);
+  const parsed = parseSupplierWb(wb);
+  const entries = Object.values(parsed);
+  for (const s of entries) {
+    await upsertSupplier(s.tedNo, s.name, s.mail);
+  }
+  flash(Object.keys(parsed).length + " tedarikçi yüklendi/güncellendi.");
+  input.value = "";
+  await renderSuppliersTab();
+}
+
+// ── Ayarlar Tab ──
+async function renderSettingsTab() {
+  const pwd = await getAyar("password") || "";
+  document.getElementById("tab-settings").innerHTML = `
+  <div>
+    <h2 class="text-lg fw7 mb4">Tedarikçi Erişim Şifresi</h2>
+    <p class="text-sm c-gray mb16">Tedarikçiler forma girmeden önce bu şifreyi sorar. Mail içinde de otomatik paylaşılır. Boş bırakırsanız şifre koruması olmaz.</p>
+    <div class="card card-pad flex gap12">
+      <input type="text" id="pwd-val" value="${esc(pwd)}" placeholder="Örn: cimtas2026" style="flex:1" />
+      <button class="btn btn-dark" onclick="savePwd()">Kaydet</button>
+    </div>
+  </div>`;
+
+  window.savePwd = async function() {
+    const val = document.getElementById("pwd-val").value.trim();
+    await setAyar("password", val);
+    flash(val ? "Şifre kaydedildi." : "Şifre koruması kaldırıldı.");
+  };
+}
+</script>
+
+<!-- ── Başlatıcı ── -->
+<script>
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
