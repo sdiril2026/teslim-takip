@@ -754,7 +754,7 @@ async function showDashboard() {
     return `<span class="badge ${cls}">${lbl}</span>`;
   }
 
-  function openMailModal(s, tip) {
+  window.openMailModal = function(s, tip) {
     const link = buildLink(s.tedNo);
     const emails = normalizeEmails(s.mail).join("; ");
     let subject, body;
