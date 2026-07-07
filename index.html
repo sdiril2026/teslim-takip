@@ -1084,9 +1084,35 @@ async function saveOrders() {
   const acilIds = window._pendingAcilSet || [];
   if (!rows.length) return;
   const acilSet = new Set(acilIds);
-  const final = rows.map(r => Object.assign({}, r, { acil: acilSet.has(r.id) }));
-  // saveOrders Supabase fonksiyonu olarak çağrılıyor
-  await saveOrders();
+
+  // Önce tüm siparişleri sil
+  await supaFetch("siparisler?id=neq.NONE", {
+    method: "DELETE",
+    headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" }
+  });
+
+  // Yeni siparişleri ekle (100'lük batch)
+  const mapped = rows.map(r => ({
+    id: r.id, talep_tipi: r.talepTipi, talep_no: r.talepNo, str_no: r.strNo,
+    malz_kodu: r.malzKodu, malz_tanim: r.malzTanim, orig_qty: r.origQty,
+    bag_miktar: r.bagMiktar, soz_tarih: r.sozTarih, ted_no: r.tedNo,
+    ted_unvan: r.tedUnvan, acil: acilSet.has(r.id)
+  }));
+
+  for (let i = 0; i < mapped.length; i += 100) {
+    await supaFetch("siparisler", {
+      method: "POST",
+      headers: { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
+      body: JSON.stringify(mapped.slice(i, i + 100))
+    });
+  }
+
+  await setAyar("uploadedAt", new Date().toISOString().slice(0, 10));
+  window._pendingOrders = null;
+  window._pendingAcilSet = null;
+  flash(rows.length + " satır kaydedildi.");
+  await renderOrdersTab();
+  document.getElementById("order-preview").classList.add("hidden");
 }
 
 // ── Acil Kalemler Tab ──
