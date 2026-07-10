@@ -352,7 +352,7 @@ function parseOrderExcel(wb) {
   for (let i=1; i<rows.length; i++) {
     const r = rows[i];
     if (!r || r.length < 13) continue;
-    const tedNo = String(r[11]||"").trim();
+    const tedNo = String(r[11]||"").trim().split(".")[0]; // 65479.0 → 65479
     const talepNo = String(r[1]||"").trim();
     const strNo = String(r[2]||"").trim();
     if (!tedNo || !talepNo) continue;
@@ -375,7 +375,7 @@ function parseSupplierExcel(wb) {
   for (let i=1; i<rows.length; i++) {
     const r = rows[i];
     if (!r || !r[0]) continue;
-    const no = String(r[0]).trim();
+    const no = String(r[0]).trim().split(".")[0]; // 65479.0 → 65479
     if (!no) continue;
     map[no] = { tedNo: no, name: String(r[1]||"").trim(), mail: String(r[2]||"").trim() };
   }
@@ -628,6 +628,7 @@ let _dashResponses = {};
 let _dashSuppliers = {};
 let _dashUploadedAt = null;
 let _dashPassword = "";
+let _dashHaric = new Set();
 
 async function showDashboard() {
   document.body.innerHTML = `
@@ -660,14 +661,15 @@ async function showDashboard() {
 }
 
 async function loadDashData() {
-  const [orders, responses, suppliers, uploadedAt, password] = await Promise.all([
-    getOrders(), getResponses(), getSuppliers(), getAyar("uploadedAt"), getAyar("password")
+  const [orders, responses, suppliers, uploadedAt, password, haricRaw] = await Promise.all([
+    getOrders(), getResponses(), getSuppliers(), getAyar("uploadedAt"), getAyar("password"), getAyar("haric_tutulanlar")
   ]);
   _dashOrders = orders;
   _dashResponses = responses;
   _dashSuppliers = suppliers;
   _dashUploadedAt = uploadedAt;
   _dashPassword = password || "";
+  _dashHaric = new Set((haricRaw || "").split(",").map(s=>s.trim()).filter(Boolean));
 }
 
 window.doExport = function() { exportExcel(_dashOrders, _dashResponses); };
@@ -702,8 +704,9 @@ function supplierStats() {
       const until = daysUntil(tarih);
       return (!r.savedAt && daysSinceUpload >= 2) || (until !== null && until < 0 && !r.savedAt) || (until === 1 && !r.savedAt);
     });
-    return Object.assign({}, s, { submitted, total, status, daysSinceUpload, hatirlatmaGereken });
-  });
+    const isHaric = _dashHaric.has(s.tedNo);
+    return Object.assign({}, s, { submitted, total, status, daysSinceUpload, hatirlatmaGereken, isHaric });
+  }).filter(s => !s.isHaric);
 }
 
 function statusBadge(status) {
@@ -745,9 +748,9 @@ window.openMailFor = function(tedNo, tip) {
 
 window.topluMail = function(tip) {
   const suppliers = supplierStats();
-  const hedefler = tip === "tumu" ? suppliers.filter(s => s.status !== "tamamlandi" && s.mail) :
-                   tip === "gecikti" ? suppliers.filter(s => s.status === "gecikti" && s.mail) :
-                   suppliers.filter(s => s.hatirlatmaGereken.length > 0 && s.mail);
+  const hedefler = tip === "tumu" ? suppliers.filter(s => s.status !== "tamamlandi" && s.mail && !s.isHaric) :
+                   tip === "gecikti" ? suppliers.filter(s => s.status === "gecikti" && s.mail && !s.isHaric) :
+                   suppliers.filter(s => s.hatirlatmaGereken.length > 0 && s.mail && !s.isHaric);
   if (!hedefler.length) { flash("Uygun tedarikçi bulunamadı.", "warn"); return; }
   let idx = 0;
   function next() {
@@ -778,10 +781,10 @@ function renderOzet(el) {
     kismi: suppliers.filter(s => s.status==="kismi").length,
     gecikti: suppliers.filter(s => s.status==="gecikti").length,
     bekliyor: suppliers.filter(s => s.status==="bekliyor").length,
-    hatirlatma: suppliers.filter(s => s.hatirlatmaGereken.length > 0).length
+    hatirlatma: suppliers.filter(s => s.hatirlatmaGereken.length > 0 && !s.isHaric).length
   };
-  const totalOrders = _dashOrders.length;
-  const totalDone = Object.values(_dashResponses).filter(r => r.savedAt).length;
+  const totalOrders = _dashOrders.filter(o => !_dashHaric.has(o.tedNo)).length;
+  const totalDone = _dashOrders.filter(o => !_dashHaric.has(o.tedNo) && _dashResponses[o.id] && _dashResponses[o.id].savedAt).length;
 
   el.innerHTML = `
   <div class="grid5 mb20" style="margin-bottom:20px">
@@ -835,7 +838,7 @@ function renderOzet(el) {
           </div>
         </div>
         <div class="flex gap8">
-          ${s.mail ? `<button class="btn btn-ghost btn-sm" onclick="openMailFor('${esc(s.tedNo)}','hatirlatma')">✉ Mail</button>` : '<span class="text-xs c-lgray">Mail yok</span>'}
+          ${s.isHaric ? '<span class="text-xs c-lgray" title="Hariç tutulanlar listesinde">—</span>' : s.mail ? `<button class="btn btn-ghost btn-sm" onclick="openMailFor('${esc(s.tedNo)}','hatirlatma')">✉ Mail</button>` : '<span class="text-xs c-lgray">Mail yok</span>'}
         </div>
       </div>`;
     }).join("")}
@@ -851,6 +854,7 @@ function renderOzet(el) {
 
 function renderTablo(el) {
   const q = { val: "" };
+  const visibleOrders = _dashOrders.filter(o => !_dashHaric.has(o.tedNo));
   el.innerHTML = `
   <div class="section-hdr">
     <span class="section-title">Ana Tablo</span>
@@ -867,7 +871,7 @@ function renderTablo(el) {
         <th>Bağlanmamış</th><th>Söz Verilen</th><th>Yeni Tarih</th><th>Not</th><th>Durum</th>
       </tr></thead>
       <tbody id="tablo-body">
-        ${_dashOrders.map(o => {
+        ${visibleOrders.map(o => {
           const r = _dashResponses[o.id] || {};
           const until = daysUntil(r.yeniTarih || o.sozTarih);
           const isLate = until !== null && until < 0 && !r.savedAt;
@@ -924,6 +928,7 @@ function renderDonusler(el) {
 
 function renderGecikmis(el) {
   const gecikmisList = _dashOrders.filter(o => {
+    if (_dashHaric.has(o.tedNo)) return false;
     const r = _dashResponses[o.id] || {};
     const tarih = r.yeniTarih || o.sozTarih;
     const until = daysUntil(tarih);
@@ -962,7 +967,7 @@ function renderGecikmis(el) {
 }
 
 function renderAcilDash(el) {
-  const acilList = _dashOrders.filter(o => o.acil);
+  const acilList = _dashOrders.filter(o => o.acil && !_dashHaric.has(o.tedNo));
   el.innerHTML = `
   <div class="section-hdr">
     <span class="section-title">Acil Talepler (${acilList.length})</span>
@@ -1031,7 +1036,7 @@ function renderAcilDash(el) {
 
 function renderHatirlatma(el) {
   const suppliers = supplierStats();
-  const hatirlatmaList = suppliers.filter(s => s.hatirlatmaGereken.length > 0 && s.status !== "tamamlandi");
+  const hatirlatmaList = suppliers.filter(s => s.hatirlatmaGereken.length > 0 && s.status !== "tamamlandi" && !s.isHaric);
 
   el.innerHTML = `
   <div class="section-hdr">
@@ -1391,14 +1396,50 @@ async function renderSuppliersAdmin(el) {
 
 async function renderSettingsAdmin(el) {
   const pwd = await getAyar("password") || "";
+  const hariçRaw = await getAyar("haric_tutulanlar") || "";
+  const hariçList = hariçRaw ? hariçRaw.split(",").map(s=>s.trim()).filter(Boolean) : [];
+
+  // Mevcut siparişlerdeki tüm tedarikçileri getir
+  const orders = await getOrders();
+  const tedMap = {};
+  orders.forEach(o => { if (!tedMap[o.tedNo]) tedMap[o.tedNo] = o.tedUnvan; });
+  const tedList = Object.entries(tedMap).sort((a,b) => a[1].localeCompare(b[1],"tr"));
+
   el.innerHTML = `
   <div class="section-hdr"><span class="section-title">Ayarlar</span></div>
-  <div class="card card-pad">
+
+  <div class="card card-pad mb16">
     <label class="lbl">Tedarikçi Erişim Şifresi</label>
     <p class="text-xs c-gray mb8">Tedarikçiler forma girmeden önce bu şifreyi sorar. Mail içinde otomatik paylaşılır.</p>
     <div class="flex gap8">
       <input type="text" id="pwd-val" value="${esc(pwd)}" placeholder="Örn: cimtas2026" style="max-width:300px" />
       <button class="btn btn-primary btn-sm" onclick="savePwd()">Kaydet</button>
+    </div>
+  </div>
+
+  <div class="card card-pad">
+    <label class="lbl">Mail Gönderilmeyecek / Hatırlatmaya Dahil Edilmeyecek Tedarikçiler</label>
+    <p class="text-xs c-gray mb12">İşaretlenen tedarikçiler dashboard'da görünür ama mail butonu gösterilmez, toplu hatırlatmaya dahil edilmez. Her hafta seçimlerin korunur.</p>
+    <div class="search-wrap mb12">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Tedarikçi ara..." oninput="filterHaricList(this.value)" />
+    </div>
+    <div style="max-height:400px;overflow-y:auto;border:1px solid var(--border);border-radius:8px" id="haric-list">
+      ${tedList.length === 0 ? '<div style="padding:16px;text-align:center;color:var(--lgray)">Önce sipariş yükleyin.</div>' :
+        tedList.map(([no, unvan]) => `
+        <label class="haric-item" data-search="${esc((no+" "+unvan).toLowerCase())}"
+          style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer"
+          onmouseenter="this.style.background='#fffaf8'" onmouseleave="this.style.background=''">
+          <input type="checkbox" id="haric-${esc(no)}" ${hariçList.includes(no) ? "checked" : ""} />
+          <div>
+            <span class="text-sm fw6">${esc(unvan)}</span>
+            <span class="mono text-xs c-lgray" style="margin-left:8px">${esc(no)}</span>
+          </div>
+        </label>`).join("")}
+    </div>
+    <div class="flex gap8 mt12">
+      <button class="btn btn-primary btn-sm" onclick="saveHaric()">💾 Kaydet</button>
+      <span class="text-xs c-lgray" style="align-self:center">${hariçList.length} tedarikçi hariç tutulmuş</span>
     </div>
   </div>`;
 
@@ -1406,6 +1447,21 @@ async function renderSettingsAdmin(el) {
     const val = document.getElementById("pwd-val").value.trim();
     await setAyar("password", val);
     flash(val ? "Şifre kaydedildi." : "Şifre koruması kaldırıldı.");
+  };
+
+  window.filterHaricList = function(q) {
+    q = q.toLowerCase();
+    document.querySelectorAll(".haric-item").forEach(item => {
+      item.style.display = !q || item.dataset.search.includes(q) ? "" : "none";
+    });
+  };
+
+  window.saveHaric = async function() {
+    const secili = Array.from(document.querySelectorAll("[id^='haric-']:checked"))
+      .map(el => el.id.replace("haric-",""));
+    await setAyar("haric_tutulanlar", secili.join(","));
+    flash(secili.length + " tedarikçi hariç tutuldu.");
+    await renderSettingsAdmin(document.getElementById("admin-content"));
   };
 }
 </script>
