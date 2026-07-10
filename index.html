@@ -184,9 +184,24 @@ async function uploadOrders(rows) {
   await supa("siparisler?id=neq.NONE", { method: "DELETE" });
   // Yanıtları da sil (yeni hafta)
   await supa("yanıtlar?id=neq.NONE", { method: "DELETE" });
+  // camelCase → snake_case dönüşümü
+  const mapped = rows.map(r => ({
+    id: r.id,
+    talep_tipi: r.talepTipi,
+    talep_no: r.talepNo,
+    str_no: r.strNo,
+    malz_kodu: r.malzKodu,
+    malz_tanim: r.malzTanim,
+    orig_qty: r.origQty,
+    bag_miktar: r.bagMiktar,
+    soz_tarih: r.sozTarih,
+    ted_no: r.tedNo,
+    ted_unvan: r.tedUnvan,
+    acil: r.acil || false
+  }));
   // Batch insert
-  for (let i = 0; i < rows.length; i += 100) {
-    await supa("siparisler", { method: "POST", body: JSON.stringify(rows.slice(i, i+100)) });
+  for (let i = 0; i < mapped.length; i += 100) {
+    await supa("siparisler", { method: "POST", body: JSON.stringify(mapped.slice(i, i+100)) });
   }
   await setAyar("uploadedAt", new Date().toISOString().slice(0,10));
 }
