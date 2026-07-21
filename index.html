@@ -242,6 +242,34 @@ async function getAyar(key) {
 async function setAyar(key, value) {
   await supa("ayarlar", { method: "POST", headers: Object.assign({}, HDR, { "Prefer": "resolution=merge-duplicates,return=minimal" }), body: JSON.stringify({ key, value }) });
 }
+
+// MAIL LOG
+async function getMailLog() {
+  const rows = await supaGet("mail_log?select=*&order=sent_at.desc");
+  return rows || [];
+}
+async function logMail(tedNo, tedUnvan, mailTipi, hatirlatmaNo) {
+  await supa("mail_log", { method: "POST", body: JSON.stringify({ ted_no: tedNo, ted_unvan: tedUnvan, mail_tipi: mailTipi, hatirlatma_no: hatirlatmaNo || 1 }) });
+}
+async function getMailLogByTed(tedNo) {
+  const rows = await supaGet("mail_log?ted_no=eq." + encodeURIComponent(tedNo) + "&order=sent_at.desc");
+  return rows || [];
+}
+
+// SKOR
+async function updateSkor(tedNo, zamaninda, gec) {
+  const rows = await supaGet("tedarikciler?ted_no=eq." + encodeURIComponent(tedNo) + "&select=skor,toplam_siparis,zamaninda_teslim,gec_teslim");
+  if (!rows || !rows.length) return;
+  const r = rows[0];
+  const yeniToplam = (r.toplam_siparis || 0) + zamaninda + gec;
+  const yeniZamaninda = (r.zamaninda_teslim || 0) + zamaninda;
+  const yeniGec = (r.gec_teslim || 0) + gec;
+  const yeniSkor = yeniToplam > 0 ? Math.round((yeniZamaninda / yeniToplam) * 100) : 100;
+  await supa("tedarikciler?ted_no=eq." + encodeURIComponent(tedNo), {
+    method: "PATCH",
+    body: JSON.stringify({ skor: yeniSkor, toplam_siparis: yeniToplam, zamaninda_teslim: yeniZamaninda, gec_teslim: yeniGec })
+  });
+}
 </script>
 
 <!-- ═══════════════════════════════════
@@ -629,6 +657,7 @@ let _dashSuppliers = {};
 let _dashUploadedAt = null;
 let _dashPassword = "";
 let _dashHaric = new Set();
+let _dashMailLog = [];
 
 async function showDashboard() {
   document.body.innerHTML = `
@@ -661,8 +690,8 @@ async function showDashboard() {
 }
 
 async function loadDashData() {
-  const [orders, responses, suppliers, uploadedAt, password, haricRaw] = await Promise.all([
-    getOrders(), getResponses(), getSuppliers(), getAyar("uploadedAt"), getAyar("password"), getAyar("haric_tutulanlar")
+  const [orders, responses, suppliers, uploadedAt, password, haricRaw, mailLog] = await Promise.all([
+    getOrders(), getResponses(), getSuppliers(), getAyar("uploadedAt"), getAyar("password"), getAyar("haric_tutulanlar"), getMailLog()
   ]);
   _dashOrders = orders;
   _dashResponses = responses;
@@ -670,6 +699,7 @@ async function loadDashData() {
   _dashUploadedAt = uploadedAt;
   _dashPassword = password || "";
   _dashHaric = new Set((haricRaw || "").split(",").map(s=>s.trim()).filter(Boolean));
+  _dashMailLog = mailLog || [];
 }
 
 window.doExport = function() { exportExcel(_dashOrders, _dashResponses); };
@@ -715,21 +745,69 @@ function statusBadge(status) {
   return `<span class="badge ${cls}">${lbl}</span>`;
 }
 
-function buildMailContent(s, tip, seciliOrders) {
+function buildMailContent(s, tip, seciliOrders, hatirlatmaNo) {
   const link = buildLink(s.tedNo);
+  const pwd = _dashPassword ? "\nErisim Sifresi: " + _dashPassword : "";
+  const no = hatirlatmaNo || 1;
   let subject, body;
+
   if (tip === "hatirlatma") {
-    subject = "Acik Siparis Listesi - Teslim Tarihi Guncelleme - " + s.tedUnvan;
-    body = "Merhaba,\n\nAsagidaki linkten acik siparis satirlariniz icin guncel teslim tarihlerini girmenizi rica ederiz.\n\nForm Linki: " + link + (_dashPassword ? "\nErisim Sifresi: " + _dashPassword : "") + "\n\nGuncellemelerinizi en kisa surede tamamlayiniz.\n\nSaygilarimizla,\nCimtas Hassas Isleme Satin Alma";
-  } else {
+    if (no === 1) {
+      subject = "Acik Siparis Listesi - Teslim Tarihi Guncelleme Talebi - " + s.tedUnvan;
+      body = "Sayın " + s.tedUnvan + " Yetkilileri,\n\n" +
+        "Açık sipariş kalemleriniz için güncel teslim tarihlerini sisteme girmenizi rica ederiz.\n\n" +
+        "Form Linki: " + link + pwd + "\n\n" +
+        "Güncellemelerinizi 2 iş günü içinde tamamlamanızı önemle rica ederiz.\n\n" +
+        "İş birliğiniz için teşekkür ederiz.\n\nSaygılarımızla,\nÇimtaş Hassas İşleme Satın Alma";
+    } else if (no === 2) {
+      subject = "HATIRLATMA: Teslim Tarihi Guncelleme Bekleniyor - " + s.tedUnvan;
+      body = "Sayın " + s.tedUnvan + " Yetkilileri,\n\n" +
+        "Daha önce ilettiğimiz teslim tarihi güncelleme talebine henüz dönüş yapılmamıştır.\n\n" +
+        "Açık sipariş kalemleriniz için teslim tarihlerini aşağıdaki linkten en kısa sürede güncellemenizi talep ediyoruz.\n\n" +
+        "Form Linki: " + link + pwd + "\n\n" +
+        "Tedarik süreçlerimizin aksamaması açısından güncellemelerin bugün tamamlanması gerekmektedir.\n\n" +
+        "Saygılarımızla,\nÇimtaş Hassas İşleme Satın Alma";
+    } else {
+      subject = "ACIL HATIRLATMA: Teslim Tarihi Guncelleme - " + s.tedUnvan;
+      body = "Sayın " + s.tedUnvan + " Yetkilileri,\n\n" +
+        "Teslim tarihi güncelleme talebimize " + no + ". kez dönüş bekliyoruz. Bu durumun tedarikçi performans değerlendirmemizi olumsuz etkileyeceğini hatırlatmak isteriz.\n\n" +
+        "Lütfen aşağıdaki linkten açık sipariş kalemlerinizi BUGÜN güncelleyiniz.\n\n" +
+        "Form Linki: " + link + pwd + "\n\n" +
+        "Konu hakkında iletişime geçmenizi bekliyoruz.\n\n" +
+        "Saygılarımızla,\nÇimtaş Hassas İşleme Satın Alma";
+    }
+  } else if (tip === "gecikme") {
+    const liste = (seciliOrders||[]).map(o => "- [" + o.malzKodu + "] " + o.malzTanim + " (Sipariş: " + o.talepNo + "/" + o.strNo + ", Söz Verilen: " + fmtDate(o.sozTarih) + ")").join("\n");
+    subject = "Teslim Tarihi Asimi - Guncelleme Talebi - " + s.tedUnvan;
+    body = "Sayın " + s.tedUnvan + " Yetkilileri,\n\n" +
+      "Aşağıda listelenen siparişlerimiz, tarafınızca söz verilen teslim tarihlerinde tarafımıza ulaşmamıştır.\n\n" +
+      liste + "\n\n" +
+      "Güncel teslim tarihlerinizi aşağıdaki linkten en kısa sürede güncellemenizi ve gecikmenin nedenini belirtmenizi talep ediyoruz.\n\n" +
+      "Form Linki: " + link + pwd + "\n\n" +
+      "Saygılarımızla,\nÇimtaş Hassas İşleme Satın Alma";
+  } else if (tip === "acil") {
     const liste = (seciliOrders||[]).map(o => "- [" + o.malzKodu + "] " + o.malzTanim + " (" + o.talepNo + "/" + o.strNo + ")").join("\n");
-    subject = "ACIL: Siparis Hizlandirma Talebi - " + s.tedUnvan;
-    body = "Merhaba,\n\nAsagidaki kalemlerin teslimatinin hizlandirilmasini acilen talep ediyoruz:\n\n" + liste + "\n\nEn kisa surede donus yapmanizi rica ederiz.\n\nSaygilarimizla,\nCimtas Hassas Isleme Satin Alma";
+    subject = "ACİL: Üretim Kritik Sipariş Hızlandırma Talebi - " + s.tedUnvan;
+    body = "Sayın " + s.tedUnvan + " Yetkilileri,\n\n" +
+      "Aşağıdaki kalemler üretim süreçlerimiz açısından kritik öneme sahip olup teslimatın mümkün olan en kısa sürede gerçekleştirilmesi gerekmektedir.\n\n" +
+      liste + "\n\n" +
+      "Mevcut üretim tarihleri göz önünde bulundurulduğunda bu malzemelerin gecikmesi halinde ciddi aksaklıklar yaşanacaktır. Teslimat tarihini öne çekme imkânınız olup olmadığını ve güncel durumu en kısa sürede iletmenizi rica ederiz.\n\n" +
+      "Form Linki: " + link + pwd + "\n\n" +
+      "Saygılarımızla,\nÇimtaş Hassas İşleme Satın Alma";
+  } else {
+    // hizlandir
+    const liste = (seciliOrders||[]).map(o => "- [" + o.malzKodu + "] " + o.malzTanim + " (" + o.talepNo + "/" + o.strNo + ")").join("\n");
+    subject = "Siparis Hizlandirma Talebi - " + s.tedUnvan;
+    body = "Sayın " + s.tedUnvan + " Yetkilileri,\n\n" +
+      "Aşağıdaki kalemlerin teslimatının hızlandırılmasını talep ediyoruz:\n\n" +
+      liste + "\n\n" +
+      "En kısa sürede dönüş yapmanızı rica ederiz.\n\n" +
+      "Saygılarımızla,\nÇimtaş Hassas İşleme Satın Alma";
   }
   return { subject, body, emails: normalizeEmails(s.mail) };
 }
 
-window.openMailFor = function(tedNo, tip) {
+window.openMailFor = function(tedNo, tip, hatirlatmaNo) {
   const suppliers = supplierStats();
   const s = suppliers.find(x => x.tedNo === tedNo);
   if (!s) return;
@@ -737,12 +815,20 @@ window.openMailFor = function(tedNo, tip) {
     const el = document.getElementById("hiz-chk-"+o.id);
     return el && el.checked;
   });
-  const { subject, body, emails } = buildMailContent(s, tip, secili);
+  const { subject, body, emails } = buildMailContent(s, tip, secili, hatirlatmaNo);
   if (!emails.length) { flash("Bu tedarikçinin mail adresi tanımlı değil.", "warn"); return; }
   showMailModal({
     to: emails.join("; "),
     subject, body,
-    onConfirm: () => openMailto("mailto:" + emails.join(";") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body))
+    onConfirm: async () => {
+      openMailto("mailto:" + emails.join(";") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body));
+      await logMail(tedNo, s.tedUnvan, tip, hatirlatmaNo || 1);
+      flash("Mail gönderildi ve kaydedildi.");
+      if (_dashTab === "ozet" || _dashTab === "hatirlatma") {
+        await loadDashData();
+        renderDashTab(_dashTab);
+      }
+    }
   });
 };
 
@@ -825,24 +911,107 @@ function renderOzet(el) {
       const pct = s.total > 0 ? Math.round(s.submitted/s.total*100) : 0;
       const barColor = s.status==="tamamlandi" ? "#16a34a" : s.status==="gecikti" ? "#dc2626" : s.status==="kismi" ? "#f59e0b" : "var(--orange)";
       return `
-      <div class="ozet-row" data-search="${esc(s.tedUnvan.toLowerCase())} ${esc(s.tedNo)}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap">
-        <div style="flex:1;min-width:200px">
-          <div class="flex gap8 mb4 flex-wrap">
-            <span class="fw6 text-sm truncate" style="max-width:280px">${esc(s.tedUnvan)}</span>
-            ${statusBadge(s.status)}
-            ${s.hatirlatmaGereken.length > 0 && s.status !== "tamamlandi" ? '<span class="badge b-orange">🔔 '+s.hatirlatmaGereken.length+'</span>' : ""}
+      <div class="ozet-row" data-search="${esc(s.tedUnvan.toLowerCase())} ${esc(s.tedNo)}" style="border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;flex-wrap:wrap" onclick="toggleOzetDetail('${esc(s.tedNo)}')">
+          <div style="flex:1;min-width:200px">
+            <div class="flex gap8 mb4 flex-wrap">
+              <span class="fw6 text-sm truncate" style="max-width:280px">${esc(s.tedUnvan)}</span>
+              ${statusBadge(s.status)}
+              ${s.hatirlatmaGereken.length > 0 && s.status !== "tamamlandi" ? '<span class="badge b-orange">🔔 '+s.hatirlatmaGereken.length+'</span>' : ""}
+            </div>
+            <div class="flex gap8">
+              <div class="prog"><div class="prog-bar" style="width:${pct}%;background:${barColor}"></div></div>
+              <span class="text-xs c-lgray">${s.submitted}/${s.total}</span>
+            </div>
           </div>
-          <div class="flex gap8">
-            <div class="prog"><div class="prog-bar" style="width:${pct}%;background:${barColor}"></div></div>
-            <span class="text-xs c-lgray">${s.submitted}/${s.total}</span>
+          <div class="flex gap8" onclick="event.stopPropagation()">
+            ${s.isHaric ? '<span class="text-xs c-lgray">—</span>' : s.mail ? `<button class="btn btn-ghost btn-sm" onclick="openMailFor('${esc(s.tedNo)}','hatirlatma',${s.hatirlatmaGereken.length > 0 ? (s.hatirlatmaGereken.length > 2 ? 3 : s.hatirlatmaGereken.length) : 1})">✉ Mail</button>` : '<span class="text-xs c-lgray">Mail yok</span>'}
+            <span style="color:#94A3B8;font-size:16px" id="chev-${esc(s.tedNo)}">▶</span>
           </div>
         </div>
-        <div class="flex gap8">
-          ${s.isHaric ? '<span class="text-xs c-lgray" title="Hariç tutulanlar listesinde">—</span>' : s.mail ? `<button class="btn btn-ghost btn-sm" onclick="openMailFor('${esc(s.tedNo)}','hatirlatma')">✉ Mail</button>` : '<span class="text-xs c-lgray">Mail yok</span>'}
+        <div id="ozet-detail-${esc(s.tedNo)}" class="hidden" style="background:#F8FAFC;border-top:1px solid var(--border);padding:12px 16px">
+          <div class="overflow-x rounded border" style="background:white">
+            <table class="tbl">
+              <thead><tr>
+                <th><input type="checkbox" onchange="toggleAllOzetRows('${esc(s.tedNo)}',this.checked)" title="Tümünü seç/kaldır" /></th>
+                <th>Talep</th><th>Malz. Kodu</th><th>Malzeme</th><th>Bağlanmamış</th><th>Söz Verilen</th><th>Yeni Tarih</th><th>Durum</th>
+              </tr></thead>
+              <tbody>
+                ${s.orders.map(o => {
+                  const r = _dashResponses[o.id] || {};
+                  const until = daysUntil(r.yeniTarih || o.sozTarih);
+                  const isLate = until !== null && until < 0 && !r.savedAt;
+                  const durum = r.savedAt ? '<span class="badge b-green" style="font-size:10px">✓</span>' : isLate ? '<span class="badge b-red" style="font-size:10px">Geç</span>' : '<span class="badge b-orange" style="font-size:10px">Bekliyor</span>';
+                  return `<tr class="${isLate?"late":""}">
+                    <td><input type="checkbox" class="ozet-row-chk" data-ted="${esc(s.tedNo)}" data-id="${esc(o.id)}" checked /></td>
+                    <td class="mono">${esc(o.talepTipi)} ${esc(o.talepNo)}/${esc(o.strNo)}</td>
+                    <td class="mono">${esc(o.malzKodu)}</td>
+                    <td class="truncate" style="max-width:180px">${esc(o.malzTanim)}</td>
+                    <td>${esc(o.bagMiktar)}</td>
+                    <td>${fmtDate(o.sozTarih)}</td>
+                    <td class="fw6">${r.yeniTarih ? fmtDate(r.yeniTarih) : "—"}</td>
+                    <td>${durum}</td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>
+          <div class="flex gap8 mt8" style="flex-wrap:wrap">
+            ${s.mail ? `<button class="btn btn-primary btn-sm" onclick="mailSecililer('${esc(s.tedNo)}','hatirlatma')">✉ Seçilenlere Mail At</button>` : ""}
+            ${s.mail ? `<button class="btn btn-ghost btn-sm" onclick="mailSecililer('${esc(s.tedNo)}','gecikme')">⚠ Gecikme Maili</button>` : ""}
+          </div>
+          <div id="mail-log-${esc(s.tedNo)}" class="mt8"></div>
         </div>
       </div>`;
     }).join("")}
   </div>`;
+
+  window.toggleOzetDetail = function(tedNo) {
+    const detail = document.getElementById("ozet-detail-" + tedNo);
+    const chev = document.getElementById("chev-" + tedNo);
+    if (!detail) return;
+    const isHidden = detail.classList.contains("hidden");
+    detail.classList.toggle("hidden");
+    if (chev) chev.textContent = isHidden ? "▼" : "▶";
+    if (isHidden) loadMailLogForTed(tedNo);
+  };
+
+  window.toggleAllOzetRows = function(tedNo, checked) {
+    document.querySelectorAll(".ozet-row-chk[data-ted='" + tedNo + "']").forEach(el => el.checked = checked);
+  };
+
+  window.mailSecililer = function(tedNo, tip) {
+    const suppliers = supplierStats();
+    const s = suppliers.find(x => x.tedNo === tedNo);
+    if (!s) return;
+    const seciliIds = Array.from(document.querySelectorAll(".ozet-row-chk[data-ted='" + tedNo + "']:checked")).map(el => el.dataset.id);
+    const seciliOrders = s.orders.filter(o => seciliIds.includes(o.id));
+    const hatNo = tip === "hatirlatma" ? (s.hatirlatmaGereken.length > 2 ? 3 : s.hatirlatmaGereken.length || 1) : 1;
+    const { subject, body, emails } = buildMailContent(s, tip, seciliOrders, hatNo);
+    if (!emails.length) { flash("Mail adresi tanımlı değil.", "warn"); return; }
+    showMailModal({
+      to: emails.join("; "), subject, body,
+      onConfirm: async () => {
+        openMailto("mailto:" + emails.join(";") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body));
+        await logMail(tedNo, s.tedUnvan, tip, hatNo);
+        flash("Mail gönderildi.");
+        loadMailLogForTed(tedNo);
+      }
+    });
+  };
+
+  window.loadMailLogForTed = async function(tedNo) {
+    const logEl = document.getElementById("mail-log-" + tedNo);
+    if (!logEl) return;
+    const logs = await getMailLogByTed(tedNo);
+    if (!logs.length) { logEl.innerHTML = ""; return; }
+    logEl.innerHTML = `<div class="text-xs c-gray fw6 mb4">Mail Geçmişi:</div>` +
+      logs.slice(0,5).map(l => {
+        const d = new Date(l.sent_at);
+        const tip = l.mail_tipi === "hatirlatma" ? "Hatırlatma" : l.mail_tipi === "gecikme" ? "Gecikme" : l.mail_tipi === "acil" ? "Acil" : "Hızlandırma";
+        return `<div class="text-xs c-lgray">${d.toLocaleDateString("tr-TR")} ${d.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})} — ${tip} #${l.hatirlatma_no}</div>`;
+      }).join("");
+  };
 
   window.filterOzet = function(q) {
     q = q.toLowerCase();
@@ -905,25 +1074,59 @@ function renderDonusler(el) {
   el.innerHTML = `
   <div class="section-hdr">
     <span class="section-title">Tedarikçi Dönüşleri</span>
+    <div class="flex gap8">
+      <button class="btn btn-ghost btn-sm" onclick="donuslerTopluMail()">✉ Seçilenlere Mail At</button>
+    </div>
   </div>
   <div class="card overflow-x">
     <table class="tbl">
-      <thead><tr><th>Tedarikçi</th><th>Toplam</th><th>Yanıtlanan</th><th>Bekleyen</th><th>Durum</th><th>İlerleme</th></tr></thead>
+      <thead><tr>
+        <th><input type="checkbox" onchange="toggleAllDonusler(this.checked)" /></th>
+        <th>Tedarikçi</th><th>Toplam</th><th>Yanıtlanan</th><th>Bekleyen</th><th>Durum</th><th>Skor</th><th>İlerleme</th><th>Mail</th>
+      </tr></thead>
       <tbody>
         ${suppliers.map(s => {
           const pct = s.total > 0 ? Math.round(s.submitted/s.total*100) : 0;
+          const sup = _dashSuppliers[s.tedNo] || {};
+          const skor = sup.skor !== undefined ? sup.skor : 100;
+          const skorColor = skor >= 80 ? "#16a34a" : skor >= 60 ? "#f59e0b" : "#dc2626";
           return `<tr>
-            <td class="fw6">${esc(s.tedUnvan)}</td>
+            <td><input type="checkbox" class="donusler-chk" data-ted="${esc(s.tedNo)}" /></td>
+            <td class="fw6 truncate" style="max-width:200px">${esc(s.tedUnvan)}</td>
             <td>${s.total}</td>
             <td class="c-green fw6">${s.submitted}</td>
             <td class="${s.total-s.submitted > 0 ? "c-red fw6" : ""}">${s.total-s.submitted}</td>
             <td>${statusBadge(s.status)}</td>
-            <td><div style="display:flex;align-items:center;gap:8px"><div class="prog" style="width:100px"><div class="prog-bar" style="width:${pct}%;background:${s.status==="tamamlandi"?"#16a34a":"var(--orange)"}"></div></div><span class="text-xs c-lgray">%${pct}</span></div></td>
+            <td><span style="color:${skorColor};font-weight:700">${skor}</span></td>
+            <td><div style="display:flex;align-items:center;gap:8px"><div class="prog" style="width:80px"><div class="prog-bar" style="width:${pct}%;background:${s.status==="tamamlandi"?"#16a34a":"var(--orange)"}"></div></div><span class="text-xs c-lgray">%${pct}</span></div></td>
+            <td>${s.mail && !s.isHaric ? `<button class="btn btn-ghost btn-sm" onclick="openMailFor('${esc(s.tedNo)}','hatirlatma',1)">✉</button>` : "—"}</td>
           </tr>`;
         }).join("")}
       </tbody>
     </table>
   </div>`;
+
+  window.toggleAllDonusler = function(checked) {
+    document.querySelectorAll(".donusler-chk").forEach(el => el.checked = checked);
+  };
+
+  window.donuslerTopluMail = function() {
+    const seciliTedler = Array.from(document.querySelectorAll(".donusler-chk:checked")).map(el => el.dataset.ted);
+    if (!seciliTedler.length) { flash("Hiç tedarikçi seçilmedi.", "warn"); return; }
+    const suppliers = supplierStats();
+    const hedefler = suppliers.filter(s => seciliTedler.includes(s.tedNo) && s.mail && !s.isHaric);
+    if (!hedefler.length) { flash("Seçili tedarikçilerin mail adresi yok.", "warn"); return; }
+    let idx = 0;
+    function next() {
+      if (idx >= hedefler.length) { flash(hedefler.length + " mail hazırlandı."); return; }
+      const s = hedefler[idx++];
+      const { subject, body, emails } = buildMailContent(s, "hatirlatma", [], 1);
+      openMailto("mailto:" + emails.join(";") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body));
+      logMail(s.tedNo, s.tedUnvan, "hatirlatma", 1);
+      setTimeout(next, 1500);
+    }
+    next();
+  };
 }
 
 function renderGecikmis(el) {
@@ -1038,6 +1241,13 @@ function renderHatirlatma(el) {
   const suppliers = supplierStats();
   const hatirlatmaList = suppliers.filter(s => s.hatirlatmaGereken.length > 0 && s.status !== "tamamlandi" && !s.isHaric);
 
+  // Her tedarikçi için kaç kez mail atıldı
+  const mailSayisi = {};
+  _dashMailLog.forEach(l => {
+    if (!mailSayisi[l.ted_no]) mailSayisi[l.ted_no] = 0;
+    mailSayisi[l.ted_no]++;
+  });
+
   el.innerHTML = `
   <div class="section-hdr">
     <span class="section-title">Hatırlatma Gerekenler (${hatirlatmaList.length} tedarikçi)</span>
@@ -1045,14 +1255,21 @@ function renderHatirlatma(el) {
   </div>
   ${hatirlatmaList.length === 0 ? '<div class="card card-pad" style="text-align:center;color:var(--lgray)">Hatırlatma gereken tedarikçi yok. ✓</div>' : `
   <div class="space-y">
-    ${hatirlatmaList.map(s => `
+    ${hatirlatmaList.map(s => {
+      const sayac = mailSayisi[s.tedNo] || 0;
+      const hatNo = Math.min(sayac + 1, 3);
+      return `
     <div class="card">
       <div style="padding:12px 16px;background:#fffbeb;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
         <div>
           <span class="fw7 text-sm">${esc(s.tedUnvan)}</span>
           <span class="text-xs c-lgray" style="margin-left:8px">${s.hatirlatmaGereken.length} kalem bekliyor</span>
+          ${sayac > 0 ? `<span class="badge b-red" style="margin-left:8px;font-size:10px">${sayac}. hatırlatma yapıldı</span>` : ""}
         </div>
-        ${s.mail ? `<button class="btn btn-primary btn-sm" onclick="openMailFor('${esc(s.tedNo)}','hatirlatma')">✉ Hatırlatma Gönder</button>` : '<span class="text-xs c-lgray">Mail adresi yok</span>'}
+        <div class="flex gap8">
+          ${s.mail ? `<button class="btn btn-primary btn-sm" onclick="openMailFor('${esc(s.tedNo)}','hatirlatma',${hatNo})">✉ ${hatNo}. Hatırlatma</button>` : '<span class="text-xs c-lgray">Mail adresi yok</span>'}
+          ${s.mail && s.hatirlatmaGereken.some(o => daysUntil(o.sozTarih) < 0) ? `<button class="btn btn-ghost btn-sm" onclick="openMailFor('${esc(s.tedNo)}','gecikme',1)">⚠ Gecikme Maili</button>` : ""}
+        </div>
       </div>
       <div class="overflow-x">
         <table class="tbl">
@@ -1075,7 +1292,7 @@ function renderHatirlatma(el) {
           </tbody>
         </table>
       </div>
-    </div>`).join("")}
+    </div>`}).join("")}
   </div>`}`;
 }
 </script>
