@@ -180,10 +180,8 @@ async function getOrders() {
   }));
 }
 async function uploadOrders(rows) {
-  // Sil
+  // Sadece siparişleri sil, yanıtları koru
   await supa("siparisler?id=neq.NONE", { method: "DELETE" });
-  // Yanıtları da sil (yeni hafta)
-  await supa("yanıtlar?id=neq.NONE", { method: "DELETE" });
   // camelCase → snake_case dönüşümü
   const mapped = rows.map(r => ({
     id: r.id,
@@ -1404,7 +1402,7 @@ async function renderOrdersAdmin(el) {
           </table>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <p class="text-sm c-gray">⚠️ Mevcut veri ve tedarikçi yanıtları silinecek.</p>
+          <p class="text-sm c-gray">Mevcut sipariş listesi güncellenecek. Tedarikçi yanıtları <strong>korunacak</strong>.</p>
           <button class="btn btn-primary" onclick="doSaveOrders()">💾 ${result.length} satırı kaydet</button>
         </div>
       </div>`;
