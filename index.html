@@ -2,1701 +2,1146 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Teslim Tarihi Takip — Çimtaş Machining</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Teslim Tarihi Takip</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F5F6F8;color:#1B2E5E;font-size:14px}
-:root{
-  --navy:#1B2E5E;--navy2:#243b78;--orange:#E8732A;--orange2:#d4631c;
-  --green:#16a34a;--red:#dc2626;--gray:#64748B;--lgray:#94A3B8;
-  --border:#E2E8F0;--bg:#F5F6F8;--white:#ffffff;
-  --amber:#f59e0b;
-}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0F2F5;color:#1a1a2e;font-size:14px}
+:root{--navy:#1B2E5E;--navy2:#243b78;--orange:#E8732A;--orange2:#d4621c;--green:#16a34a;--red:#dc2626;--amber:#f59e0b;--gray:#64748B;--lgray:#94A3B8;--border:#E2E8F0;--white:#fff}
 
-/* Layout */
-.page{min-height:100vh}
-header{background:var(--navy);padding:10px 24px;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
-header .inner{max-width:1300px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.logo-img{height:32px;width:auto}
-main{max-width:1300px;margin:0 auto;padding:24px 16px}
+/* HEADER */
+header{background:var(--navy);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.logo{height:26px}
+.hdr-actions{display:flex;align-items:center;gap:8px}
+.hdr-btn{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;color:rgba(255,255,255,.75);background:rgba(255,255,255,.1);transition:.15s}
+.hdr-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+.hdr-btn.active{background:var(--orange);color:#fff}
 
-/* Nav */
-.nav-links{display:flex;align-items:center;gap:4px}
-.nav-btn{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,0.7);transition:all 0.15s}
-.nav-btn:hover,.nav-btn.active{background:rgba(255,255,255,0.15);color:white}
-.nav-btn.orange{background:var(--orange);color:white}
-.nav-btn.orange:hover{background:var(--orange2)}
+/* LAYOUT */
+.page{min-height:calc(100vh - 52px);padding:20px}
+.max{max-width:1200px;margin:0 auto}
 
-/* Buttons */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:all 0.15s;white-space:nowrap}
-.btn-primary{background:var(--orange);color:white}.btn-primary:hover{background:var(--orange2)}
-.btn-navy{background:var(--navy);color:white}.btn-navy:hover{background:var(--navy2)}
-.btn-ghost{background:transparent;color:var(--gray);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--navy);color:var(--navy)}
-.btn-red{background:#fee2e2;color:#dc2626}.btn-red:hover{background:#fecaca}
-.btn-green{background:#dcfce7;color:#16a34a}.btn-green:hover{background:#bbf7d0}
-.btn-sm{padding:5px 10px;font-size:12px;border-radius:6px}
-.btn:disabled{opacity:0.4;cursor:not-allowed}
+/* CARDS */
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.card-body{padding:16px}
 
-/* Cards */
-.card{background:white;border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.card-pad{padding:20px}
+/* STATS ROW */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.stat{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:.15s;border-left:4px solid transparent}
+.stat:hover{border-color:var(--orange);transform:translateY(-1px)}
+.stat.active{border-left-color:var(--orange);background:#fffaf7}
+.stat-val{font-size:28px;font-weight:800;line-height:1}
+.stat-lbl{font-size:11px;color:var(--lgray);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.c-navy{color:var(--navy)}.c-green{color:var(--green)}.c-red{color:var(--red)}.c-amber{color:var(--amber)}.c-orange{color:var(--orange)}
 
-/* Forms */
-input[type=text],input[type=date],input[type=password],textarea,select{
-  width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;
-  font-size:13px;font-family:inherit;background:white;color:var(--navy);outline:none;
-  transition:border-color 0.15s,box-shadow 0.15s
-}
-input:focus,textarea:focus,select:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,115,42,0.12)}
-input:disabled{background:#F8FAFC;color:var(--gray)}
-label.lbl{font-size:11px;color:var(--gray);font-weight:600;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.3px}
-input[type=checkbox]{width:15px;height:15px;accent-color:var(--orange);cursor:pointer;flex-shrink:0}
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.search-box{position:relative;flex:1;min-width:200px}
+.search-box input{width:100%;padding:8px 12px 8px 34px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;outline:none;transition:.15s}
+.search-box input:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,115,42,.1)}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--lgray);font-size:14px}
 
-/* Badges */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700}
-.b-orange{background:#fff0e8;color:#c25a1a}
-.b-green{background:#dcfce7;color:#166534}
-.b-red{background:#fee2e2;color:#991b1b}
-.b-blue{background:#dbeafe;color:#1e40af}
-.b-gray{background:#f1f5f9;color:var(--gray)}
-.b-acil{background:#dc2626;color:white;letter-spacing:0.5px}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.15s;white-space:nowrap;text-decoration:none}
+.btn-primary{background:var(--orange);color:#fff}.btn-primary:hover{background:var(--orange2)}
+.btn-navy{background:var(--navy);color:#fff}.btn-navy:hover{background:var(--navy2)}
+.btn-ghost{background:#fff;color:var(--gray);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--navy);color:var(--navy)}
+.btn-red{background:#fee2e2;color:var(--red)}.btn-red:hover{background:#fecaca}
+.btn-green{background:#dcfce7;color:var(--green)}
+.btn-sm{padding:5px 10px;font-size:11px;border-radius:6px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:9px 12px;background:#F8FAFC;color:var(--gray);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--border)}
+td{padding:8px 12px;border-top:1px solid #F1F5F9;color:var(--navy);vertical-align:middle}
+tr:hover td{background:#FAFBFF}
+tr.late td{background:#FFF5F5}
+tr.late:hover td{background:#FEE2E2}
+tr.done td{background:#F0FDF4}
+.mono{font-family:monospace;font-size:11px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700;white-space:nowrap}
+.b-green{background:#dcfce7;color:#166534}.b-red{background:#fee2e2;color:#991b1b}
+.b-amber{background:#fef3c7;color:#92400e}.b-blue{background:#dbeafe;color:#1e40af}
+.b-gray{background:#f1f5f9;color:var(--gray)}.b-acil{background:var(--red);color:#fff}
 .b-navy{background:#e8edf7;color:var(--navy)}
 
-/* Table */
-.tbl{width:100%;border-collapse:collapse;font-size:12px}
-.tbl th{text-align:left;padding:9px 12px;background:#F1F5F9;color:var(--gray);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap}
-.tbl th input[type=checkbox]{margin:0}
-.tbl td{padding:8px 12px;border-top:1px solid var(--border);color:var(--navy);vertical-align:middle}
-.tbl tr:hover td{background:#fafbfc}
-.tbl tr.late td{background:#fff5f5}
-.tbl tr.selected td{background:#fff8f4}
-.mono{font-family:'SF Mono',Consolas,monospace;font-size:11px}
+/* PROGRESS */
+.prog{height:4px;background:#E8EDF7;border-radius:99px;overflow:hidden;display:inline-block;vertical-align:middle}
+.prog-bar{height:100%;border-radius:99px}
 
-/* Progress */
-.prog{height:5px;background:#E8EDF7;border-radius:99px;overflow:hidden;min-width:80px}
-.prog-bar{height:100%;border-radius:99px;transition:width 0.3s}
+/* CHECKBOX */
+input[type=checkbox]{width:15px;height:15px;accent-color:var(--orange);cursor:pointer}
 
-/* Tabs */
-.page-tabs{display:flex;gap:2px;background:white;border-bottom:2px solid var(--border);padding:0 24px;overflow-x:auto;margin-bottom:0}
-.page-tab{padding:12px 18px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--gray);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all 0.15s}
-.page-tab:hover{color:var(--navy)}
-.page-tab.active{color:var(--orange);border-bottom-color:var(--orange)}
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-hdr{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-hdr h3{font-size:14px;font-weight:700}
+.modal-body{padding:20px;overflow-y:auto;flex:1}
+.modal-ftr{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.mail-preview{background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;line-height:1.7;white-space:pre-wrap;max-height:280px;overflow-y:auto}
+.field-lbl{font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px;margin-top:10px}
+.field-lbl:first-child{margin-top:0}
 
-/* Alert */
-.alert{padding:10px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+/* FORM INPUTS */
+input[type=text],input[type=date],input[type=password],textarea,select{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;color:var(--navy);outline:none;transition:.15s}
+input:focus,textarea:focus,select:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,115,42,.1)}
+input:disabled{background:#F8FAFC;color:var(--gray)}
+.lbl{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:4px}
+
+/* ALERT */
+.alert{padding:10px 14px;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .alert-ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
 .alert-err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
 .alert-warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
 .alert-info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
 
-/* Upload zone */
-.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:border-color 0.2s}
+/* UPLOAD */
+.upload-zone{border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:.2s}
 .upload-zone:hover{border-color:var(--orange);background:#fffaf8}
 
-/* Modal */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
-.modal{background:white;border-radius:16px;max-width:580px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
-.modal-hdr{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.modal-hdr h3{font-size:15px;font-weight:700;color:var(--navy)}
-.modal-body{padding:20px;overflow-y:auto;flex:1}
-.modal-ftr{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
-.mail-preview{background:#F5F6F8;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;line-height:1.8;white-space:pre-wrap;font-family:inherit;color:#334155;max-height:300px;overflow-y:auto}
-.mail-lbl{font-size:10px;font-weight:700;color:var(--lgray);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px;margin-top:12px}
-.mail-lbl:first-child{margin-top:0}
+/* WARNING BANNER */
+.warn-banner{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px}
+.warn-banner ul{margin:4px 0 0 16px}
+.warn-banner li{font-size:12px;color:#92400e;margin-top:2px}
 
-/* Stat */
-.stat{background:white;border:1px solid var(--border);border-radius:12px;padding:16px}
-.stat-val{font-size:28px;font-weight:800;line-height:1}
-.stat-lbl{font-size:11px;color:var(--lgray);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.3px}
+/* SUPPLIER FORM */
+.sup-header{background:var(--navy);color:#fff;padding:14px 20px;border-radius:10px;margin-bottom:16px}
+.order-tbl-wrap{border-radius:10px;border:1px solid var(--border);overflow:hidden;background:#fff}
 
-/* Misc */
+/* DARK PAGE */
+.dark-page{min-height:100vh;background:var(--navy);display:flex;align-items:center;justify-content:center;padding:24px}
+
+/* RESPONSIVE */
+@media(max-width:768px){.stats{grid-template-columns:repeat(2,1fr)}.toolbar{flex-direction:column;align-items:stretch}}
+
+/* MISC */
+.hidden{display:none!important}
+.space-y>*+*{margin-top:10px}
+.flex{display:flex;align-items:center}.gap4{gap:4px}.gap8{gap:8px}.gap12{gap:12px}.gap16{gap:16px}
+.flex-1{flex:1}.min-w-0{min-width:0}.truncate{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt20{margin-top:20px}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-@media(max-width:700px){.grid2,.grid3,.grid4,.grid5{grid-template-columns:1fr 1fr}}
-@media(max-width:480px){.grid2,.grid3,.grid4,.grid5{grid-template-columns:1fr}}
-.flex{display:flex;align-items:center}.gap4{gap:4px}.gap8{gap:8px}.gap12{gap:12px}.gap16{gap:16px}
-.flex-1{flex:1}.min-w-0{min-width:0}
-.truncate{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mt4{margin-top:4px}.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt24{margin-top:24px}
-.mb4{margin-bottom:4px}.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}.mb24{margin-bottom:24px}
-.space-y>*+*{margin-top:10px}
-.hidden{display:none!important}
-.text-xs{font-size:11px}.text-sm{font-size:13px}.text-lg{font-size:17px}
 .fw6{font-weight:600}.fw7{font-weight:700}.fw8{font-weight:800}
-.c-gray{color:var(--gray)}.c-lgray{color:var(--lgray)}.c-red{color:#dc2626}.c-green{color:#16a34a}.c-orange{color:var(--orange)}.c-navy{color:var(--navy)}
-.search-wrap{position:relative}
-.search-wrap input{padding-left:34px}
-.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--lgray);pointer-events:none}
-.overflow-x{overflow-x:auto}
-.rounded{border-radius:8px}
-.border{border:1px solid var(--border)}
-.divider{border:none;border-top:1px solid var(--border);margin:0}
-.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
-.section-title{font-size:16px;font-weight:800;color:var(--navy)}
-.action-panel{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:18px;margin-bottom:20px}
-
-/* Supplier form */
-.order-card{background:white;border:1px solid var(--border);border-radius:10px;padding:14px;transition:border-color 0.15s}
-.order-card.acil{border-color:#fca5a5;background:#fff5f5}
-.order-card.done{border-color:#86efac;background:#f0fdf4}
-
-/* Landing */
-.dark-page{min-height:100vh;background:var(--navy);display:flex;align-items:center;justify-content:center;padding:24px}
+.text-xs{font-size:11px}.text-sm{font-size:13px}
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0}
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════
-     SUPABASE
-═══════════════════════════════════ -->
+<!-- ═══════ SUPABASE ═══════ -->
 <script>
-const SUPA_URL = "https://hmlxxeuxzakguhlmpyla.supabase.co";
-const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtbHh4ZXV4emFrZ3VobG1weWxhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMjM4NDksImV4cCI6MjA5ODg5OTg0OX0.NvIrQeeqWS-cXdsOe3cwkGdBk2ZBRWTGcWyyAYJ8N40";
-const HDR = { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" };
+const SB_URL = "https://hmlxxeuxzakguhlmpyla.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtbHh4ZXV4emFrZ3VobG1weWxhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMjM4NDksImV4cCI6MjA5ODg5OTg0OX0.NvIrQeeqWS-cXdsOe3cwkGdBk2ZBRWTGcWyyAYJ8N40";
+const H = {"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json"};
 
-async function supa(path, opts) {
-  const res = await fetch(SUPA_URL + "/rest/v1/" + path, Object.assign({ headers: Object.assign({}, HDR, { "Prefer": "return=minimal" }) }, opts));
-  if (!res.ok) throw new Error(await res.text());
-  const t = await res.text(); return t ? JSON.parse(t) : null;
+async function sbGet(path) {
+  const r = await fetch(SB_URL+"/rest/v1/"+path, {headers:H});
+  if(!r.ok) throw new Error(await r.text());
+  const t = await r.text(); return t ? JSON.parse(t) : [];
 }
-async function supaGet(path) {
-  const res = await fetch(SUPA_URL + "/rest/v1/" + path, { headers: HDR });
-  if (!res.ok) throw new Error(await res.text());
-  const t = await res.text(); return t ? JSON.parse(t) : [];
+async function sbPost(path, body, extra) {
+  const r = await fetch(SB_URL+"/rest/v1/"+path, {method:"POST", headers:Object.assign({},H,{"Prefer":"return=minimal"},extra||{}), body:JSON.stringify(body)});
+  if(!r.ok) throw new Error(await r.text());
+}
+async function sbPatch(path, body) {
+  const r = await fetch(SB_URL+"/rest/v1/"+path, {method:"PATCH", headers:Object.assign({},H,{"Prefer":"return=minimal"}), body:JSON.stringify(body)});
+  if(!r.ok) throw new Error(await r.text());
+}
+async function sbDelete(path) {
+  const r = await fetch(SB_URL+"/rest/v1/"+path, {method:"DELETE", headers:Object.assign({},H,{"Prefer":"return=minimal"})});
+  if(!r.ok) throw new Error(await r.text());
+}
+async function sbUpsert(path, body) {
+  await sbPost(path, body, {"Prefer":"resolution=merge-duplicates,return=minimal"});
 }
 
-// ORDERS
+// DATA LAYER
 async function getOrders() {
-  const rows = await supaGet("siparisler?select=*&order=ted_no,talep_no");
-  return (rows || []).map(r => ({
-    id: r.id, talepTipi: r.talep_tipi, talepNo: r.talep_no, strNo: r.str_no,
-    malzKodu: r.malz_kodu, malzTanim: r.malz_tanim, origQty: r.orig_qty,
-    bagMiktar: r.bag_miktar, sozTarih: r.soz_tarih, tedNo: r.ted_no,
-    tedUnvan: r.ted_unvan, acil: r.acil
+  const rows = await sbGet("siparisler?select=*&order=ted_no,talep_no");
+  return (rows||[]).map(r=>({
+    id:r.id, talepTipi:r.talep_tipi, talepNo:r.talep_no, strNo:r.str_no,
+    malzKodu:r.malz_kodu, malzTanim:r.malz_tanim, origQty:r.orig_qty,
+    bagMiktar:r.bag_miktar, sozTarih:r.soz_tarih, tedNo:r.ted_no,
+    tedUnvan:r.ted_unvan, acil:r.acil
   }));
 }
 async function uploadOrders(rows) {
-  // Sadece siparişleri sil, yanıtları koru
-  await supa("siparisler?id=neq.NONE", { method: "DELETE" });
-  // camelCase → snake_case dönüşümü
-  const mapped = rows.map(r => ({
-    id: r.id,
-    talep_tipi: r.talepTipi,
-    talep_no: r.talepNo,
-    str_no: r.strNo,
-    malz_kodu: r.malzKodu,
-    malz_tanim: r.malzTanim,
-    orig_qty: r.origQty,
-    bag_miktar: r.bagMiktar,
-    soz_tarih: r.sozTarih,
-    ted_no: r.tedNo,
-    ted_unvan: r.tedUnvan,
-    acil: r.acil || false
+  await sbDelete("siparisler?id=neq.NONE");
+  const mapped = rows.map(r=>({
+    id:r.id, talep_tipi:r.talepTipi, talep_no:r.talepNo, str_no:r.strNo,
+    malz_kodu:r.malzKodu, malz_tanim:r.malzTanim, orig_qty:r.origQty,
+    bag_miktar:r.bagMiktar, soz_tarih:r.sozTarih, ted_no:r.tedNo,
+    ted_unvan:r.tedUnvan, acil:r.acil||false
   }));
-  // Batch insert
-  for (let i = 0; i < mapped.length; i += 100) {
-    await supa("siparisler", { method: "POST", body: JSON.stringify(mapped.slice(i, i+100)) });
-  }
+  for(let i=0;i<mapped.length;i+=100) await sbPost("siparisler", mapped.slice(i,i+100));
   await setAyar("uploadedAt", new Date().toISOString().slice(0,10));
 }
-async function setAcil(id, acil) {
-  await supa("siparisler?id=eq." + encodeURIComponent(id), { method: "PATCH", body: JSON.stringify({ acil }) });
-}
+async function setAcil(id, acil) { await sbPatch("siparisler?id=eq."+encodeURIComponent(id), {acil}); }
 
-// RESPONSES
 async function getResponses() {
-  const rows = await supaGet("yanıtlar?select=*");
-  const map = {};
-  (rows || []).forEach(r => { map[r.siparis_id] = { yeniTarih: r.yeni_tarih, not: r.not_, savedAt: r.saved_at }; });
-  return map;
+  const rows = await sbGet("yanıtlar?select=*");
+  const m={};
+  (rows||[]).forEach(r=>{m[r.siparis_id]={yeniTarih:r.yeni_tarih, not:r.not_, savedAt:r.saved_at};});
+  return m;
 }
-async function saveResponse(id, yeniTarih, not) {
-  await supa("yanıtlar", { method: "POST", headers: Object.assign({}, HDR, { "Prefer": "resolution=merge-duplicates,return=minimal" }), body: JSON.stringify({ id, siparis_id: id, yeni_tarih: yeniTarih, not_: not, saved_at: new Date().toISOString() }) });
+async function saveResponse(id, yeniTarih, not_) {
+  await sbUpsert("yanıtlar", {id, siparis_id:id, yeni_tarih:yeniTarih, not_:not_, saved_at:new Date().toISOString()});
 }
 
-// SUPPLIERS
 async function getSuppliers() {
-  const rows = await supaGet("tedarikciler?select=*&order=ted_unvan");
-  const map = {};
-  (rows || []).forEach(r => { map[r.ted_no] = { tedNo: r.ted_no, name: r.ted_unvan, mail: r.mail }; });
-  return map;
+  const rows = await sbGet("tedarikciler?select=*&order=ted_unvan");
+  const m={};
+  (rows||[]).forEach(r=>{m[r.ted_no]={tedNo:r.ted_no, name:r.ted_unvan, mail:r.mail, skor:r.skor||100};});
+  return m;
 }
 async function upsertSupplier(tedNo, name, mail) {
-  await supa("tedarikciler", { method: "POST", headers: Object.assign({}, HDR, { "Prefer": "resolution=merge-duplicates,return=minimal" }), body: JSON.stringify({ ted_no: tedNo, ted_unvan: name, mail }) });
+  await sbUpsert("tedarikciler", {ted_no:tedNo, ted_unvan:name, mail});
 }
-async function deleteSupplier(tedNo) {
-  await supa("tedarikciler?ted_no=eq." + encodeURIComponent(tedNo), { method: "DELETE" });
-}
+async function deleteSupplier(tedNo) { await sbDelete("tedarikciler?ted_no=eq."+encodeURIComponent(tedNo)); }
 
-// SETTINGS
 async function getAyar(key) {
-  const rows = await supaGet("ayarlar?key=eq." + encodeURIComponent(key) + "&select=value");
-  return rows && rows.length ? rows[0].value : null;
+  const r = await sbGet("ayarlar?key=eq."+encodeURIComponent(key)+"&select=value");
+  return r&&r.length ? r[0].value : null;
 }
-async function setAyar(key, value) {
-  await supa("ayarlar", { method: "POST", headers: Object.assign({}, HDR, { "Prefer": "resolution=merge-duplicates,return=minimal" }), body: JSON.stringify({ key, value }) });
-}
+async function setAyar(key, value) { await sbUpsert("ayarlar", {key, value}); }
 
-// MAIL LOG
 async function getMailLog() {
-  const rows = await supaGet("mail_log?select=*&order=sent_at.desc");
-  return rows || [];
+  const rows = await sbGet("mail_log?select=*&order=sent_at.desc");
+  return rows||[];
 }
-async function logMail(tedNo, tedUnvan, mailTipi, hatirlatmaNo) {
-  await supa("mail_log", { method: "POST", body: JSON.stringify({ ted_no: tedNo, ted_unvan: tedUnvan, mail_tipi: mailTipi, hatirlatma_no: hatirlatmaNo || 1 }) });
-}
-async function getMailLogByTed(tedNo) {
-  const rows = await supaGet("mail_log?ted_no=eq." + encodeURIComponent(tedNo) + "&order=sent_at.desc");
-  return rows || [];
-}
-
-// SKOR
-async function updateSkor(tedNo, zamaninda, gec) {
-  const rows = await supaGet("tedarikciler?ted_no=eq." + encodeURIComponent(tedNo) + "&select=skor,toplam_siparis,zamaninda_teslim,gec_teslim");
-  if (!rows || !rows.length) return;
-  const r = rows[0];
-  const yeniToplam = (r.toplam_siparis || 0) + zamaninda + gec;
-  const yeniZamaninda = (r.zamaninda_teslim || 0) + zamaninda;
-  const yeniGec = (r.gec_teslim || 0) + gec;
-  const yeniSkor = yeniToplam > 0 ? Math.round((yeniZamaninda / yeniToplam) * 100) : 100;
-  await supa("tedarikciler?ted_no=eq." + encodeURIComponent(tedNo), {
-    method: "PATCH",
-    body: JSON.stringify({ skor: yeniSkor, toplam_siparis: yeniToplam, zamaninda_teslim: yeniZamaninda, gec_teslim: yeniGec })
-  });
+async function logMail(tedNo, tedUnvan, tip, no) {
+  await sbPost("mail_log", {ted_no:tedNo, ted_unvan:tedUnvan, mail_tipi:tip, hatirlatma_no:no||1});
 }
 </script>
 
-<!-- ═══════════════════════════════════
-     HELPERS
-═══════════════════════════════════ -->
+<!-- ═══════ HELPERS ═══════ -->
 <script>
+const LOGO_SRC = "data:image/png;base64,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";
+
 function serialToISO(v) {
-  if (!v && v !== 0) return "";
-  if (typeof v === "number" && v > 1) {
-    const serial = v > 59 ? v : v + 1;
-    const d = new Date(new Date(Date.UTC(1899,11,30)).getTime() + serial * 86400000);
-    return d.getUTCFullYear() + "-" + String(d.getUTCMonth()+1).padStart(2,"0") + "-" + String(d.getUTCDate()).padStart(2,"0");
+  if(!v && v!==0) return "";
+  if(typeof v==="number" && v>1) {
+    const s=v>59?v:v+1;
+    const d=new Date(new Date(Date.UTC(1899,11,30)).getTime()+s*86400000);
+    return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0");
   }
-  if (typeof v === "string") {
-    if (/^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0,10);
-    if (/^\d{2}\.\d{2}\.\d{4}/.test(v)) { const p=v.split("."); return p[2]+"-"+p[1]+"-"+p[0]; }
+  if(typeof v==="string"){
+    if(/^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0,10);
+    if(/^\d{2}\.\d{2}\.\d{4}/.test(v)){const p=v.split(".");return p[2]+"-"+p[1]+"-"+p[0];}
   }
   return "";
 }
-function fmtDate(iso) {
-  if (!iso) return "—";
-  const p = iso.split("-");
-  if (p.length !== 3) return iso;
-  return p[2]+"."+p[1]+"."+p[0];
+function fmtDate(iso){
+  if(!iso) return "—";
+  const p=iso.split("-");
+  return p.length===3?p[2]+"."+p[1]+"."+p[0]:iso;
 }
-function daysUntil(iso) {
-  if (!iso) return null;
-  const today = new Date(); today.setHours(0,0,0,0);
-  return Math.floor((new Date(iso+"T00:00:00") - today) / 86400000);
+function daysUntil(iso){
+  if(!iso) return null;
+  const t=new Date();t.setHours(0,0,0,0);
+  return Math.floor((new Date(iso+"T00:00:00")-t)/86400000);
 }
-function daysDiff(iso) {
-  if (!iso) return null;
-  const today = new Date(); today.setHours(0,0,0,0);
-  return Math.floor((today - new Date(iso+"T00:00:00")) / 86400000);
+function daysDiff(iso){
+  if(!iso) return null;
+  const t=new Date();t.setHours(0,0,0,0);
+  return Math.floor((t-new Date(iso+"T00:00:00"))/86400000);
 }
-function normalizeEmails(raw) {
-  if (!raw) return [];
+function normalizeEmails(raw){
+  if(!raw) return [];
   return String(raw).split(/[;,]/).map(e=>e.trim()).filter(e=>e.includes("@"));
 }
-function buildLink(tedNo) {
-  return window.location.href.split("?")[0] + "?supplier=" + encodeURIComponent(String(tedNo));
+function buildLink(tedNo){
+  return window.location.href.split("?")[0]+"?supplier="+encodeURIComponent(String(tedNo));
 }
-function esc(s) {
+function esc(s){
   return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
-function getParam(name) { return new URLSearchParams(window.location.search).get(name); }
-function navigate(q) { window.location.href = window.location.pathname + (q ? "?"+q : ""); }
+function getParam(n){return new URLSearchParams(window.location.search).get(n);}
+function navigate(q){window.location.href=window.location.pathname+(q?"?"+q:"");}
 
-function flash(msg, type) {
-  const el = document.getElementById("flash");
-  if (!el) return;
-  el.textContent = msg;
-  el.className = "alert " + (type==="err" ? "alert-err" : type==="warn" ? "alert-warn" : type==="info" ? "alert-info" : "alert-ok");
-  el.classList.remove("hidden");
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.add("hidden"), 4000);
+let _flashT;
+function flash(msg, type){
+  let el=document.getElementById("flash");
+  if(!el){el=document.createElement("div");el.id="flash";el.style.cssText="position:fixed;top:60px;right:16px;z-index:9999;max-width:320px";document.body.appendChild(el);}
+  el.innerHTML=`<div class="alert alert-${type||"ok"}" style="box-shadow:0 4px 12px rgba(0,0,0,.15)">${esc(msg)}</div>`;
+  clearTimeout(_flashT);_flashT=setTimeout(()=>{el.innerHTML="";},4000);
 }
 
-function openMailto(mailto) {
-  const a = document.createElement("a");
-  a.href = mailto; a.style.display = "none";
-  document.body.appendChild(a); a.click();
-  setTimeout(() => document.body.removeChild(a), 500);
+function showModal(html, onClose){
+  let ov=document.getElementById("modal-ov");
+  if(!ov){ov=document.createElement("div");ov.id="modal-ov";ov.className="overlay";document.body.appendChild(ov);}
+  ov.innerHTML=html;ov.classList.remove("hidden");
+  window._closeModal=()=>{ov.classList.add("hidden");ov.innerHTML="";if(onClose)onClose();};
+  ov.addEventListener("click", e=>{if(e.target===ov)window._closeModal();},{once:true});
+}
+function closeModal(){if(window._closeModal)window._closeModal();}
+
+function openMailto(mailto){
+  const a=document.createElement("a");a.href=mailto;a.style.display="none";
+  document.body.appendChild(a);a.click();setTimeout(()=>document.body.removeChild(a),500);
 }
 
-function showMailModal(opts) {
-  const existing = document.getElementById("mail-modal");
-  if (existing) existing.remove();
-  const modal = document.createElement("div");
-  modal.className = "modal-overlay"; modal.id = "mail-modal";
-  modal.innerHTML = `
-  <div class="modal">
-    <div class="modal-hdr">
-      <h3>📧 Mail Önizleme</h3>
-      <button onclick="document.getElementById('mail-modal').remove()" style="background:none;border:none;cursor:pointer;color:#94A3B8;font-size:20px;line-height:1">×</button>
-    </div>
-    <div class="modal-body">
-      <span class="mail-lbl">Alıcı</span>
-      <div style="font-size:13px;color:var(--navy);margin-bottom:4px">${esc(opts.to)}</div>
-      <span class="mail-lbl">Konu</span>
-      <div style="font-size:13px;color:var(--navy);margin-bottom:4px">${esc(opts.subject)}</div>
-      <span class="mail-lbl">İçerik</span>
-      <div class="mail-preview">${esc(opts.body)}</div>
-    </div>
-    <div class="modal-ftr">
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('mail-modal').remove()">İptal</button>
-      <button class="btn btn-primary btn-sm" onclick="document.getElementById('mail-modal').remove();window._mailConfirm()">✉ Outlook'ta Aç</button>
-    </div>
-  </div>`;
-  window._mailConfirm = opts.onConfirm;
-  document.body.appendChild(modal);
-  modal.addEventListener("click", e => { if (e.target===modal) modal.remove(); });
-}
-
-function readExcel(file) {
-  return new Promise((res,rej) => {
-    const reader = new FileReader();
-    reader.onload = e => res(XLSX.read(e.target.result, { type:"array", raw:true }));
-    reader.onerror = () => rej(reader.error);
-    reader.readAsArrayBuffer(file);
+function readExcelFile(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=e=>res(XLSX.read(e.target.result,{type:"array",raw:true}));
+    r.onerror=()=>rej(r.error);
+    r.readAsArrayBuffer(file);
   });
 }
 
-function parseOrderExcel(wb) {
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:"", raw:true });
-  const result = [];
-  for (let i=1; i<rows.length; i++) {
-    const r = rows[i];
-    if (!r || r.length < 13) continue;
-    const tedNo = String(r[11]||"").trim().split(".")[0]; // 65479.0 → 65479
-    const talepNo = String(r[1]||"").trim();
-    const strNo = String(r[2]||"").trim();
-    if (!tedNo || !talepNo) continue;
+function parseOrderExcel(wb){
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:true});
+  const result=[];
+  for(let i=1;i<rows.length;i++){
+    const r=rows[i];
+    if(!r||r.length<13) continue;
+    const tedNo=String(r[11]||"").trim().split(".")[0];
+    const talepNo=String(r[1]||"").trim();
+    const strNo=String(r[2]||"").trim();
+    if(!tedNo||!talepNo) continue;
     result.push({
-      id: tedNo+"-"+talepNo+"-"+strNo,
-      talepTipi: String(r[0]||"").trim(), talepNo, strNo,
-      malzKodu: String(r[3]||"").trim(), malzTanim: String(r[4]||"").trim(),
-      origQty: String(r[5]||"").trim(), bagMiktar: String(r[6]||"").trim(),
-      sozTarih: serialToISO(r[9]), tedNo,
-      tedUnvan: String(r[12]||"").trim(), acil: false
+      id:tedNo+"-"+talepNo+"-"+strNo,
+      talepTipi:String(r[0]||"").trim(), talepNo, strNo,
+      malzKodu:String(r[3]||"").trim(), malzTanim:String(r[4]||"").trim(),
+      origQty:String(r[5]||"").trim(), bagMiktar:String(r[6]||"").trim(),
+      sozTarih:serialToISO(r[9]), tedNo,
+      tedUnvan:String(r[12]||"").trim(), acil:false
     });
   }
   return result;
 }
 
-function parseSupplierExcel(wb) {
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:"", raw:true });
-  const map = {};
-  for (let i=1; i<rows.length; i++) {
-    const r = rows[i];
-    if (!r || !r[0]) continue;
-    const no = String(r[0]).trim().split(".")[0]; // 65479.0 → 65479
-    if (!no) continue;
-    map[no] = { tedNo: no, name: String(r[1]||"").trim(), mail: String(r[2]||"").trim() };
+function parseSupplierExcel(wb){
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:true});
+  const m={};
+  for(let i=1;i<rows.length;i++){
+    const r=rows[i];if(!r||!r[0]) continue;
+    const no=String(r[0]).trim().split(".")[0];
+    if(no) m[no]={tedNo:no,name:String(r[1]||"").trim(),mail:String(r[2]||"").trim()};
   }
-  return map;
+  return m;
 }
 
-function exportExcel(orders, responses) {
-  const headers = ["Talep Tipi","Talep No","Str No","JDE Malz. Kodu","Malzeme Tanımı","Orig. Qty","Bağlanmamış Miktar","Söz Verilen Tarih","Yeni Teslim Tarihi","Not","Tedarikçi No","Tedarikçi Ünvan","Durum"];
-  const data = [headers, ...orders.map(o => {
-    const r = responses[o.id] || {};
-    const until = daysUntil(o.sozTarih);
-    const durum = (until !== null && until < 0) ? (r.savedAt ? "Gecikmiş-Teslim Edilmedi" : "Gecikmiş") : r.savedAt ? "Girildi" : "Bekliyor";
-    // Tarihleri ' öneki ile metin olarak koy, Excel otomatik dönüştürmesin
-    return [o.talepTipi, o.talepNo, o.strNo, o.malzKodu, o.malzTanim, o.origQty, o.bagMiktar,
-            fmtDate(o.sozTarih), r.yeniTarih ? fmtDate(r.yeniTarih) : "", r.not||"",
-            o.tedNo, o.tedUnvan, durum];
-  })];
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(data, { raw: false });
-  // Tarih sütunlarını (H ve I) metin formatında işaretle
-  const range = XLSX.utils.decode_range(ws["!ref"]);
-  for (let row = 1; row <= range.e.r; row++) {
-    ["H","I"].forEach(col => {
-      const addr = col + (row + 1);
-      if (ws[addr]) { ws[addr].t = "s"; }
-    });
+// STATUS HELPERS
+function orderStatus(o, resp){
+  const r=resp||{};
+  const tarih=r.yeniTarih||o.sozTarih;
+  const until=daysUntil(tarih);
+  if(until!==null && until<0) return "gecikti";
+  if(r.savedAt) return "girildi";
+  return "bekliyor";
+}
+
+function supplierStatus(orders, resp){
+  const statuses=orders.map(o=>orderStatus(o,resp[o.id]||{}));
+  if(statuses.every(s=>s==="girildi")) return "tamamlandi";
+  if(statuses.some(s=>s==="gecikti")) return "gecikti";
+  if(statuses.some(s=>s==="girildi")) return "kismi";
+  return "bekliyor";
+}
+
+function buildMail(tedUnvan, tip, link, pwd, hatNo, kalemler){
+  const n=hatNo||1;
+  let subj, body;
+  if(tip==="ilk"){
+    subj="Teslim Tarihi Guncelleme Talebi - "+tedUnvan;
+    body="Sayin "+tedUnvan+" Yetkilileri,\n\nAcik siparis kalemleriniz icin guncel teslim tarihlerini asagidaki linkten girmenizi rica ederiz.\n\nForm Linki: "+link+(pwd?"\nSifre: "+pwd:"")+"\n\nGuncellemelerin 2 is gunu icinde tamamlanmasini bekliyoruz.\n\nSaygilarimizla,\nCimtas Hassas Isleme Satin Alma";
+  } else if(tip==="hatirlatma"){
+    if(n<=2){
+      subj="HATIRLATMA: Teslim Tarihi Guncelleme Bekleniyor - "+tedUnvan;
+      body="Sayin "+tedUnvan+" Yetkilileri,\n\nDaha once ilettigimiz teslim tarihi guncelleme talebine henuz donus yapilmamistir.\n\nForm Linki: "+link+(pwd?"\nSifre: "+pwd:"")+"\n\nGucellemelerin bugün tamamlanmasi gerekmektedir.\n\nSaygilarimizla,\nCimtas Hassas Isleme Satin Alma";
+    } else {
+      subj="ACİL: "+n+". Hatirlamma - Teslim Tarihi Guncelleme - "+tedUnvan;
+      body="Sayin "+tedUnvan+" Yetkilileri,\n\nTeslim tarihi guncelleme talebimize "+n+" kez donus bekliyoruz. Bu durum tedarikci performans degerlendirmemizi olumsuz etkileyecektir.\n\nLutfen BUGUN asagidaki linkten guncelleyiniz.\n\nForm Linki: "+link+(pwd?"\nSifre: "+pwd:"")+"\n\nSaygilarimizla,\nCimtas Hassas Isleme Satin Alma";
+    }
+  } else if(tip==="gecikme"){
+    const liste=(kalemler||[]).map(o=>"- ["+o.malzKodu+"] "+o.malzTanim+" (Soz Verilen: "+fmtDate(o.sozTarih)+")").join("\n");
+    subj="Teslim Tarihi Asimi - "+tedUnvan;
+    body="Sayin "+tedUnvan+" Yetkilileri,\n\nAsagidaki siparis kalemleri, taahhut ettiginiz teslim tarihlerinde tarafimiza ulasmamistir:\n\n"+liste+"\n\nGuncel teslim tarihlerini ve gecikme nedenini en kisa surede bildirmenizi talep ediyoruz.\n\nForm Linki: "+link+(pwd?"\nSifre: "+pwd:"")+"\n\nSaygilarimizla,\nCimtas Hassas Isleme Satin Alma";
+  } else if(tip==="acil"){
+    const liste=(kalemler||[]).map(o=>"- ["+o.malzKodu+"] "+o.malzTanim).join("\n");
+    subj="ACİL: Uretim Kritik Siparis Hizlandirma - "+tedUnvan;
+    body="Sayin "+tedUnvan+" Yetkilileri,\n\nAsagidaki kalemler uretim sureclerimiz acisindan kritik oneme sahiptir ve teslimatlarinin hizlandirilmasi gerekmektedir:\n\n"+liste+"\n\nMevcut durumu ve en erken teslim tarihini bugün bildirmenizi rica ederiz.\n\nForm Linki: "+link+(pwd?"\nSifre: "+pwd:"")+"\n\nSaygilarimizla,\nCimtas Hassas Isleme Satin Alma";
   }
-  ws["!cols"] = [8,10,8,14,30,10,14,14,14,20,10,30,10].map(w=>({wch:w}));
-  XLSX.utils.book_append_sheet(wb, ws, "Teslim Takip");
-  XLSX.writeFile(wb, "Teslim_Takip_"+new Date().toISOString().slice(0,10)+".xlsx");
+  return {subj, body};
+}
+
+function showMailPreview(to, subj, body, onConfirm){
+  showModal(`
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>📧 Mail Önizleme</h3>
+      <button onclick="closeModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#94A3B8;line-height:1">×</button>
+    </div>
+    <div class="modal-body">
+      <span class="field-lbl">Alıcı</span><div style="font-size:13px;margin-bottom:4px">${esc(to)}</div>
+      <span class="field-lbl">Konu</span><div style="font-size:13px;margin-bottom:4px">${esc(subj)}</div>
+      <span class="field-lbl">İçerik</span>
+      <div class="mail-preview">${esc(body)}</div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary btn-sm" id="modal-confirm-btn">✉ Gönder</button>
+    </div>
+  </div>`);
+  document.getElementById("modal-confirm-btn").onclick=()=>{closeModal();onConfirm();};
 }
 </script>
 
-<!-- ═══════════════════════════════════
-     ROUTER
-═══════════════════════════════════ -->
+<!-- ═══════ ROUTER ═══════ -->
 <script>
-const LOGO = "data:image/png;base64,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";
-
-function logoHTML(height) {
-  return '<img src="' + LOGO + '" alt="Çimtaş Machining" style="height:' + (height||28) + 'px;width:auto">';
+async function init(){
+  const supplier=getParam("supplier");
+  const view=getParam("view");
+  if(supplier) await showSupplierGate(decodeURIComponent(supplier));
+  else if(view==="admin") await showAdmin();
+  else await showDashboard();
 }
 
-async function init() {
-  const supplier = getParam("supplier");
-  const view = getParam("view");
-  if (supplier) await showSupplierGate(decodeURIComponent(supplier));
-  else if (view === "dashboard") await showDashboard();
-  else if (view === "admin") await showAdmin();
-  else showLanding();
-}
-</script>
-
-<!-- ═══════════════════════════════════
-     LANDING
-═══════════════════════════════════ -->
-<script>
-function showLanding() {
-  document.body.innerHTML = `
+function showLanding(){
+  document.body.innerHTML=`
   <div class="dark-page">
-    <div style="max-width:360px;width:100%;text-align:center">
-      <div style="margin-bottom:24px">${logoHTML(40)}</div>
-      <h1 style="color:white;font-size:22px;font-weight:800;margin-bottom:6px">Teslim Tarihi Takip</h1>
-      <p style="color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:32px">Çimtaş Hassas İşleme</p>
+    <div style="max-width:340px;width:100%;text-align:center">
+      <img src="${LOGO_SRC}" style="height:36px;margin-bottom:24px">
       <div class="space-y">
-        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:14px" onclick="navigate('view=dashboard')">📊 Pano</button>
-        <button class="btn btn-navy" style="width:100%;justify-content:center;padding:12px;font-size:14px;border:1px solid rgba(255,255,255,0.2);margin-top:10px" onclick="navigate('view=admin')">⚙️ Admin</button>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:14px" onclick="navigate('view=dashboard')">📊 Takip Paneli</button>
+        <button class="btn btn-ghost" style="width:100%;justify-content:center;padding:12px;font-size:14px;margin-top:10px;background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" onclick="navigate('view=admin')">⚙ Admin</button>
       </div>
     </div>
   </div>`;
 }
 </script>
 
-<!-- ═══════════════════════════════════
-     SUPPLIER GATE
-═══════════════════════════════════ -->
+<!-- ═══════ SUPPLIER GATE ═══════ -->
 <script>
-async function showSupplierGate(supplierId) {
-  const pwd = await getAyar("password") || "";
-  if (!pwd) { await showSupplierView(supplierId); return; }
-  document.body.innerHTML = `
+async function showSupplierGate(supplierId){
+  const pwd=await getAyar("password")||"";
+  if(!pwd){await showSupplierView(supplierId);return;}
+  document.body.innerHTML=`
   <div class="dark-page">
-    <div style="max-width:360px;width:100%">
-      <div style="text-align:center;margin-bottom:24px">${logoHTML(36)}</div>
-      <div style="background:#243b78;border-radius:16px;padding:24px;border:1px solid rgba(255,255,255,0.1)">
-        <label class="lbl" style="color:rgba(255,255,255,0.6)">Erişim şifresi</label>
+    <div style="max-width:340px;width:100%">
+      <div style="text-align:center;margin-bottom:24px"><img src="${LOGO_SRC}" style="height:30px"></div>
+      <div style="background:#243b78;border-radius:12px;padding:24px;border:1px solid rgba(255,255,255,.1)">
+        <label class="lbl" style="color:rgba(255,255,255,.6)">Erişim Şifresi</label>
         <input id="pwd-in" type="password" placeholder="Şifrenizi girin"
-          style="background:rgba(255,255,255,0.1);color:white;border-color:rgba(255,255,255,0.2);margin-bottom:12px"
+          style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2);margin-bottom:10px"
           onkeydown="if(event.key==='Enter')checkPwd('${esc(supplierId)}')" />
-        <p id="pwd-err" class="hidden" style="color:#fca5a5;font-size:12px;margin-bottom:8px">Yanlış şifre, tekrar deneyin.</p>
+        <p id="pwd-err" class="hidden" style="color:#fca5a5;font-size:12px;margin-bottom:8px">Yanlış şifre.</p>
         <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="checkPwd('${esc(supplierId)}')">Giriş</button>
       </div>
     </div>
   </div>`;
 }
-
-async function checkPwd(supplierId) {
-  const pwd = await getAyar("password") || "";
-  const input = document.getElementById("pwd-in").value;
-  if (input === pwd) { await showSupplierView(supplierId); }
-  else {
-    document.getElementById("pwd-err").classList.remove("hidden");
-    document.getElementById("pwd-in").style.borderColor = "#fca5a5";
-  }
+async function checkPwd(id){
+  const pwd=await getAyar("password")||"";
+  if(document.getElementById("pwd-in").value===pwd) await showSupplierView(id);
+  else{document.getElementById("pwd-err").classList.remove("hidden");document.getElementById("pwd-in").style.borderColor="#fca5a5";}
 }
 </script>
 
-<!-- ═══════════════════════════════════
-     SUPPLIER VIEW
-═══════════════════════════════════ -->
+<!-- ═══════ SUPPLIER VIEW ═══════ -->
 <script>
-async function showSupplierView(supplierId) {
+async function showSupplierView(supplierId){
   const [allOrders, responses] = await Promise.all([getOrders(), getResponses()]);
-  const orders = allOrders.filter(o => o.tedNo === supplierId);
-  const tedAdi = (orders[0] && orders[0].tedUnvan) || supplierId;
+  const orders = allOrders.filter(o=>o.tedNo===supplierId);
+  const tedAdi = (orders[0]&&orders[0].tedUnvan)||supplierId;
+  const acil = orders.filter(o=>o.acil);
+  const normal = orders.filter(o=>!o.acil);
 
-  const acil = orders.filter(o => o.acil);
-  const normal = orders.filter(o => !o.acil);
-
-  function orderRowHTML(o, idx) {
-    const r = responses[o.id] || {};
-    const isSubmitted = !!r.savedAt;
-    const efTarih = r.yeniTarih || o.sozTarih;
-    const until = daysUntil(efTarih);
-    const isLate = until !== null && until < 0;
-    return `
-    <tr class="${isSubmitted ? "" : isLate ? "late" : ""}" id="row-${o.id}">
-      <td><input type="checkbox" id="chk-sup-${o.id}" /></td>
+  function rowHTML(o){
+    const r=responses[o.id]||{};
+    const tarih=r.yeniTarih||o.sozTarih;
+    const until=daysUntil(tarih);
+    const st=orderStatus(o,r);
+    const isLate=st==="gecikti";
+    const isDone=st==="girildi";
+    return `<tr class="${isLate?"late":isDone?"done":""}" id="sup-row-${o.id}">
+      <td><input type="checkbox" id="sup-chk-${o.id}"></td>
       <td>
-        <div class="flex gap4 flex-wrap">
-          ${o.acil ? '<span class="badge b-acil" style="font-size:9px">ACİL</span>' : ""}
-          ${isLate ? '<span class="badge b-red" style="font-size:9px">Tarih Geçmiş</span>' : ""}
-          ${isSubmitted ? '<span class="badge b-green" style="font-size:9px">✓</span>' : ""}
-        </div>
+        ${o.acil?'<span class="badge b-acil">ACİL</span> ':""}
+        ${isLate?'<span class="badge b-red">Tarih Geçti</span>':""}
+        ${isDone&&!isLate?'<span class="badge b-green">✓</span>':""}
       </td>
       <td class="mono">${esc(o.talepTipi)} ${esc(o.talepNo)}/${esc(o.strNo)}</td>
-      <td><span class="mono" style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:11px">${esc(o.malzKodu)}</span></td>
-      <td style="max-width:220px"><div class="truncate" title="${esc(o.malzTanim)}">${esc(o.malzTanim)}</div></td>
-      <td class="text-right fw6">${esc(o.bagMiktar)}</td>
+      <td><code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:11px">${esc(o.malzKodu)}</code></td>
+      <td style="max-width:200px"><div class="truncate" title="${esc(o.malzTanim)}">${esc(o.malzTanim)}</div></td>
+      <td class="fw6">${esc(o.bagMiktar)}</td>
       <td>${fmtDate(o.sozTarih)}</td>
       <td>
-        <input type="date" id="date-${o.id}" value="${esc(r.yeniTarih||"")}" lang="tr" style="min-width:130px" onchange="onDateChange('${esc(o.id)}')" />
-        <div style="font-size:10px;color:#94A3B8;margin-top:2px">GG/AA/YYYY</div>
+        <input type="date" id="sup-date-${o.id}" value="${esc(r.yeniTarih||"")}" style="min-width:120px" onchange="supDateChange('${esc(o.id)}')">
+        <div style="font-size:10px;color:#94A3B8;margin-top:1px">GG/AA/YYYY</div>
       </td>
-      <td><input type="text" id="not-${o.id}" value="${esc(r.not||"")}" placeholder="Not..." style="min-width:100px" /></td>
-      <td>
-        <button class="btn btn-navy btn-sm" id="savebtn-${o.id}" onclick="saveRowSup('${esc(o.id)}')" ${!r.yeniTarih ? "disabled" : ""}>
-          ${isSubmitted ? "✓ Güncelle" : "Kaydet"}
-        </button>
-      </td>
+      <td><input type="text" id="sup-not-${o.id}" value="${esc(r.not||"")}" placeholder="Not..." style="min-width:80px;font-size:12px"></td>
+      <td><button class="btn btn-navy btn-sm" id="sup-btn-${o.id}" onclick="supSaveRow('${esc(o.id)}')" ${!r.yeniTarih?"disabled":""}>
+        ${isDone?"Güncelle":"Kaydet"}
+      </button></td>
     </tr>`;
   }
 
-  document.body.innerHTML = `
+  const tblHeader=`<thead><tr>
+    <th style="width:30px"><input type="checkbox" onchange="supToggleAll(this.checked)"></th>
+    <th></th><th>Talep</th><th>Malz. Kodu</th><th>Malzeme Tanımı</th>
+    <th>Bağlanmamış</th><th>Söz Verilen</th><th>Yeni Tarih</th><th>Not</th><th></th>
+  </tr></thead>`;
+
+  document.body.innerHTML=`
+  <header>
+    <img src="${LOGO_SRC}" class="logo">
+    <span style="color:rgba(255,255,255,.7);font-size:13px;font-weight:600">${esc(tedAdi)}</span>
+  </header>
   <div class="page">
-    <header>
-      <div class="inner">
-        <a href="?" style="text-decoration:none">${logoHTML(28)}</a>
-        <span style="color:rgba(255,255,255,0.7);font-size:13px;font-weight:600">${esc(tedAdi)}</span>
-      </div>
-    </header>
-    <main>
-      <div id="flash" class="hidden"></div>
-      ${orders.length === 0 ? '<div class="card card-pad" style="text-align:center;color:var(--lgray);padding:60px">Size ait açık sipariş bulunamadı.</div>' : `
-      <div class="section-hdr">
-        <div>
-          <div class="section-title">Açık Siparişler</div>
-          <div class="text-xs c-gray mt4">Tarih girerek "Kaydet" butonuna basın. Toplu kayıt için satırları seçip "Seçilenleri Kaydet" butonunu kullanın.</div>
-        </div>
-        <div class="flex gap8">
-          <button class="btn btn-ghost btn-sm" onclick="selectAllSup()">Tümünü Seç</button>
-          <button class="btn btn-primary btn-sm" onclick="saveSelectedSup()">Seçilenleri Kaydet</button>
-        </div>
-      </div>
-      ${acil.length > 0 ? `
+    <div class="max">
+      ${acil.length?`
       <div style="margin-bottom:16px">
-        <div class="flex gap8 mb8"><span style="color:#dc2626;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px">⚠ Acil Kalemler</span></div>
-        <div class="card overflow-x">
-          <table class="tbl">
-            <thead><tr><th style="width:30px"><input type="checkbox" onchange="toggleAllSup(this.checked,'acil')" /></th><th></th><th>Talep</th><th>Malz. Kodu</th><th>Malzeme Tanımı</th><th>Bağlanmamış</th><th>Mevcut Tarih</th><th>Yeni Tarih *</th><th>Not</th><th></th></tr></thead>
-            <tbody>${acil.map((o,i) => orderRowHTML(o,i)).join("")}</tbody>
-          </table>
-        </div>
-      </div>` : ""}
-      ${normal.length > 0 ? `
+        <div style="font-size:11px;font-weight:800;color:var(--red);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">⚠ Acil Kalemler</div>
+        <div class="tbl-wrap"><table>${tblHeader}<tbody>${acil.map(rowHTML).join("")}</tbody></table></div>
+      </div>`:""}
+      ${normal.length?`
       <div>
-        ${acil.length > 0 ? '<div style="font-size:12px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Diğer Siparişler</div>' : ""}
-        <div class="card overflow-x">
-          <table class="tbl">
-            <thead><tr><th style="width:30px"><input type="checkbox" onchange="toggleAllSup(this.checked,'normal')" /></th><th></th><th>Talep</th><th>Malz. Kodu</th><th>Malzeme Tanımı</th><th>Bağlanmamış</th><th>Mevcut Tarih</th><th>Yeni Tarih</th><th>Not</th><th></th></tr></thead>
-            <tbody>${normal.map((o,i) => orderRowHTML(o,i)).join("")}</tbody>
-          </table>
-        </div>
-      </div>` : ""}
-      `}
-    </main>
+        ${acil.length?'<div style="font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Diğer Siparişler</div>':""}
+        <div class="tbl-wrap"><table>${tblHeader}<tbody>${normal.map(rowHTML).join("")}</tbody></table></div>
+      </div>`:""}
+      ${!orders.length?'<div class="card card-body" style="text-align:center;color:var(--lgray);padding:60px">Size ait açık sipariş bulunamadı.</div>':""}
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="supSaveSelected()">✓ Seçilenleri Kaydet</button>
+        <button class="btn btn-ghost btn-sm" onclick="supSelectAll()">Tümünü Seç</button>
+      </div>
+    </div>
   </div>`;
 
-  window._supOrders = orders;
-  window._supResponses = responses;
+  window._supOrders=orders;
+  window._supResponses=responses;
 
-  window.onDateChange = function(id) {
-    const v = document.getElementById("date-"+id);
-    const btn = document.getElementById("savebtn-"+id);
-    if (btn) btn.disabled = !v || !v.value;
+  window.supDateChange=function(id){
+    const v=document.getElementById("sup-date-"+id);
+    const btn=document.getElementById("sup-btn-"+id);
+    if(btn) btn.disabled=!v||!v.value;
   };
+  window.supToggleAll=function(checked){orders.forEach(o=>{const el=document.getElementById("sup-chk-"+o.id);if(el)el.checked=checked;});};
+  window.supSelectAll=function(){orders.forEach(o=>{const el=document.getElementById("sup-chk-"+o.id);if(el)el.checked=true;});};
 
-  window.toggleAllSup = function(checked, group) {
-    const list = group === "acil" ? acil : normal;
-    list.forEach(o => { const el = document.getElementById("chk-sup-"+o.id); if (el) el.checked = checked; });
-  };
-
-  window.selectAllSup = function() {
-    orders.forEach(o => { const el = document.getElementById("chk-sup-"+o.id); if (el) el.checked = true; });
-  };
-
-  window.saveRowSup = async function(id) {
-    const dateEl = document.getElementById("date-"+id);
-    const notEl = document.getElementById("not-"+id);
-    if (!dateEl || !dateEl.value) return;
-    const btn = document.getElementById("savebtn-"+id);
-    if (btn) { btn.disabled = true; btn.textContent = "..."; }
-    try {
-      await saveResponse(id, dateEl.value, notEl ? notEl.value : "");
-      if (btn) { btn.textContent = "✓ Kaydedildi"; btn.style.background = "#16a34a"; }
-      const row = document.getElementById("row-"+id);
-      if (row) { row.classList.remove("late"); row.classList.add("done"); }
+  window.supSaveRow=async function(id){
+    const dateEl=document.getElementById("sup-date-"+id);
+    const notEl=document.getElementById("sup-not-"+id);
+    if(!dateEl||!dateEl.value) return;
+    const btn=document.getElementById("sup-btn-"+id);
+    if(btn){btn.disabled=true;btn.textContent="...";}
+    try{
+      await saveResponse(id, dateEl.value, notEl?notEl.value:"");
+      if(btn){btn.textContent="✓";btn.style.background="var(--green)";}
+      const row=document.getElementById("sup-row-"+id);
+      if(row){row.classList.remove("late");row.classList.add("done");}
       flash("Kaydedildi.");
-    } catch(e) {
-      flash("Hata: " + e.message, "err");
-      if (btn) { btn.disabled = false; btn.textContent = "Kaydet"; }
-    }
+    }catch(e){flash("Hata: "+e.message,"err");if(btn){btn.disabled=false;btn.textContent="Kaydet";}}
   };
 
-  window.saveSelectedSup = async function() {
-    const selected = orders.filter(o => { const el = document.getElementById("chk-sup-"+o.id); return el && el.checked; });
-    if (!selected.length) { flash("Hiç satır seçilmedi.", "warn"); return; }
-    let saved = 0;
-    for (const o of selected) {
-      const dateEl = document.getElementById("date-"+o.id);
-      if (dateEl && dateEl.value) {
-        const notEl = document.getElementById("not-"+o.id);
-        await saveResponse(o.id, dateEl.value, notEl ? notEl.value : "");
-        const btn = document.getElementById("savebtn-"+o.id);
-        if (btn) { btn.textContent = "✓ Kaydedildi"; btn.style.background = "#16a34a"; }
-        const row = document.getElementById("row-"+o.id);
-        if (row) { row.classList.remove("late"); }
+  window.supSaveSelected=async function(){
+    const sel=orders.filter(o=>{const el=document.getElementById("sup-chk-"+o.id);return el&&el.checked;});
+    if(!sel.length){flash("Hiç satır seçilmedi.","warn");return;}
+    let saved=0;
+    for(const o of sel){
+      const dateEl=document.getElementById("sup-date-"+o.id);
+      if(dateEl&&dateEl.value){
+        const notEl=document.getElementById("sup-not-"+o.id);
+        await saveResponse(o.id, dateEl.value, notEl?notEl.value:"");
+        const btn=document.getElementById("sup-btn-"+o.id);
+        if(btn){btn.textContent="✓";btn.style.background="var(--green)";}
+        const row=document.getElementById("sup-row-"+o.id);
+        if(row){row.classList.remove("late");row.classList.add("done");}
         saved++;
       }
     }
-    flash(saved + " satır kaydedildi.");
+    flash(saved+" satır kaydedildi.");
   };
 }
 </script>
 
-<!-- ═══════════════════════════════════
-     DASHBOARD
-═══════════════════════════════════ -->
+<!-- ═══════ DASHBOARD ═══════ -->
 <script>
-let _dashTab = "ozet";
-let _dashOrders = [];
-let _dashResponses = {};
-let _dashSuppliers = {};
-let _dashUploadedAt = null;
-let _dashPassword = "";
-let _dashHaric = new Set();
-let _dashMailLog = [];
+let _D={orders:[],resp:{},sups:{},uploadedAt:null,pwd:"",haric:new Set(),mailLog:[],filter:"hepsi",search:""};
 
-async function showDashboard() {
-  document.body.innerHTML = `
-  <div class="page">
-    <header>
-      <div class="inner">
-        <a href="?" style="text-decoration:none">${logoHTML(28)}</a>
-        <div class="nav-links">
-          <button class="nav-btn" onclick="navigate('view=admin')">⚙️ Admin</button>
-          <button class="nav-btn orange" id="btn-excel" onclick="doExport()">⬇ Excel</button>
-        </div>
-      </div>
-    </header>
-    <div class="page-tabs" id="dash-tabs">
-      <button class="page-tab active" onclick="switchDashTab('ozet',this)">📊 Özet</button>
-      <button class="page-tab" onclick="switchDashTab('tablo',this)">📋 Ana Tablo</button>
-      <button class="page-tab" onclick="switchDashTab('donusler',this)">✅ Tedarikçi Dönüşleri</button>
-      <button class="page-tab" onclick="switchDashTab('gecikmis',this)">⚠️ Gecikmiş</button>
-      <button class="page-tab" onclick="switchDashTab('acil',this)">🚨 Acil Talepler</button>
-      <button class="page-tab" onclick="switchDashTab('hatirlatma',this)">🔔 Hatırlatma</button>
+async function showDashboard(){
+  document.body.innerHTML=`
+  <header>
+    <img src="${LOGO_SRC}" class="logo">
+    <div class="hdr-actions">
+      <button class="hdr-btn" onclick="exportAll()">⬇ Excel</button>
+      <button class="hdr-btn" onclick="navigate('view=admin')">⚙ Admin</button>
     </div>
-    <main>
-      <div id="flash" class="hidden"></div>
-      <div id="dash-content"><div style="text-align:center;padding:60px;color:var(--lgray)">Yükleniyor...</div></div>
-    </main>
+  </header>
+  <div class="page">
+    <div class="max">
+      <div id="warn-area"></div>
+      <div class="stats" id="stat-cards"></div>
+      <div class="toolbar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Tedarikçi ara..." oninput="setSearch(this.value)" id="search-inp">
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="toggleAll(true)">Tümünü Seç</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleAll(false)">Seçimi Kaldır</button>
+        <button class="btn btn-primary btn-sm" id="toplu-btn" onclick="topluMailSec()" style="display:none">✉ Seçilenlere Mail At</button>
+      </div>
+      <div class="card" id="sup-list"></div>
+    </div>
   </div>`;
 
   await loadDashData();
-  renderDashTab(_dashTab);
+  renderDash();
 }
 
-async function loadDashData() {
-  const [orders, responses, suppliers, uploadedAt, password, haricRaw, mailLog] = await Promise.all([
-    getOrders(), getResponses(), getSuppliers(), getAyar("uploadedAt"), getAyar("password"), getAyar("haric_tutulanlar"), getMailLog()
+async function loadDashData(){
+  const [orders,resp,sups,uploadedAt,pwd,haricRaw,mailLog]=await Promise.all([
+    getOrders(),getResponses(),getSuppliers(),
+    getAyar("uploadedAt"),getAyar("password"),getAyar("haric_tutulanlar"),getMailLog()
   ]);
-  _dashOrders = orders;
-  _dashResponses = responses;
-  _dashSuppliers = suppliers;
-  _dashUploadedAt = uploadedAt;
-  _dashPassword = password || "";
-  _dashHaric = new Set((haricRaw || "").split(",").map(s=>s.trim()).filter(Boolean));
-  _dashMailLog = mailLog || [];
+  _D.orders=orders; _D.resp=resp; _D.sups=sups;
+  _D.uploadedAt=uploadedAt; _D.pwd=pwd||"";
+  _D.haric=new Set((haricRaw||"").split(",").map(s=>s.trim()).filter(Boolean));
+  _D.mailLog=mailLog||[];
 }
 
-window.doExport = function() { exportExcel(_dashOrders, _dashResponses); };
-
-window.switchDashTab = function(tab, btn) {
-  _dashTab = tab;
-  document.querySelectorAll(".page-tab").forEach(t => t.classList.remove("active"));
-  btn.classList.add("active");
-  renderDashTab(tab);
-};
-
-function supplierStats() {
-  const map = new Map();
-  _dashOrders.forEach(o => {
-    if (!map.has(o.tedNo)) {
-      const sup = _dashSuppliers[o.tedNo] || {};
-      map.set(o.tedNo, { tedNo: o.tedNo, tedUnvan: o.tedUnvan, mail: sup.mail || "", orders: [] });
-    }
+function getSupStats(){
+  const map=new Map();
+  _D.orders.forEach(o=>{
+    if(_D.haric.has(o.tedNo)) return;
+    if(!map.has(o.tedNo)) map.set(o.tedNo,{tedNo:o.tedNo,tedUnvan:o.tedUnvan,orders:[]});
     map.get(o.tedNo).orders.push(o);
   });
-  const daysSinceUpload = daysDiff(_dashUploadedAt);
-  return Array.from(map.values()).map(s => {
-    const submitted = s.orders.filter(o => { const r = _dashResponses[o.id]; if (!r || !r.savedAt) return false; const t = r.yeniTarih || o.sozTarih; return daysUntil(t) >= 0; }).length;
-    const total = s.orders.length;
-    let status = "bekliyor";
-    if (submitted === total && total > 0) status = "tamamlandi";
-    else if (submitted > 0) status = "kismi";
-    else if (daysSinceUpload !== null && daysSinceUpload >= 2) status = "gecikti";
-    const hatirlatmaGereken = s.orders.filter(o => {
-      const r = _dashResponses[o.id] || {};
-      const tarih = r.yeniTarih || o.sozTarih;
-      const until = daysUntil(tarih);
-      const efT = r.yeniTarih || o.sozTarih; const unt = daysUntil(efT); return (!r.savedAt && daysSinceUpload >= 2) || (unt !== null && unt < 0) || (unt === 1);
+  const daysSince=daysDiff(_D.uploadedAt);
+  return Array.from(map.values()).map(s=>{
+    const st=supplierStatus(s.orders,_D.resp);
+    const sup=_D.sups[s.tedNo]||{};
+    const mailSayisi=_D.mailLog.filter(l=>l.ted_no===s.tedNo).length;
+    const hatirlatmaGereken=s.orders.filter(o=>{
+      const r=_D.resp[o.id]||{};
+      const tarih=r.yeniTarih||o.sozTarih;
+      const u=daysUntil(tarih);
+      return u!==null&&u<0||(!r.savedAt&&daysSince>=2)||(u===1&&!r.savedAt);
     });
-    const isHaric = _dashHaric.has(s.tedNo);
-    return Object.assign({}, s, { submitted, total, status, daysSinceUpload, hatirlatmaGereken, isHaric });
-  }).filter(s => !s.isHaric);
-}
-
-function statusBadge(status) {
-  const m = { bekliyor: ["b-orange","Bekliyor"], kismi: ["b-blue","Kısmi"], tamamlandi: ["b-green","Tamamlandı"], gecikti: ["b-red","Gecikti"] };
-  const [cls, lbl] = m[status] || m.bekliyor;
-  return `<span class="badge ${cls}">${lbl}</span>`;
-}
-
-function buildMailContent(s, tip, seciliOrders, hatirlatmaNo) {
-  const link = buildLink(s.tedNo);
-  const pwd = _dashPassword ? "\nErisim Sifresi: " + _dashPassword : "";
-  const no = hatirlatmaNo || 1;
-  let subject, body;
-
-  if (tip === "hatirlatma") {
-    if (no === 1) {
-      subject = "Acik Siparis Listesi - Teslim Tarihi Guncelleme Talebi - " + s.tedUnvan;
-      body = "Sayın " + s.tedUnvan + " Yetkilileri,\n\n" +
-        "Açık sipariş kalemleriniz için güncel teslim tarihlerini sisteme girmenizi rica ederiz.\n\n" +
-        "Form Linki: " + link + pwd + "\n\n" +
-        "Güncellemelerinizi 2 iş günü içinde tamamlamanızı önemle rica ederiz.\n\n" +
-        "İş birliğiniz için teşekkür ederiz.\n\nSaygılarımızla,\nÇimtaş Hassas İşleme Satın Alma";
-    } else if (no === 2) {
-      subject = "HATIRLATMA: Teslim Tarihi Guncelleme Bekleniyor - " + s.tedUnvan;
-      body = "Sayın " + s.tedUnvan + " Yetkilileri,\n\n" +
-        "Daha önce ilettiğimiz teslim tarihi güncelleme talebine henüz dönüş yapılmamıştır.\n\n" +
-        "Açık sipariş kalemleriniz için teslim tarihlerini aşağıdaki linkten en kısa sürede güncellemenizi talep ediyoruz.\n\n" +
-        "Form Linki: " + link + pwd + "\n\n" +
-        "Tedarik süreçlerimizin aksamaması açısından güncellemelerin bugün tamamlanması gerekmektedir.\n\n" +
-        "Saygılarımızla,\nÇimtaş Hassas İşleme Satın Alma";
-    } else {
-      subject = "ACIL HATIRLATMA: Teslim Tarihi Guncelleme - " + s.tedUnvan;
-      body = "Sayın " + s.tedUnvan + " Yetkilileri,\n\n" +
-        "Teslim tarihi güncelleme talebimize " + no + ". kez dönüş bekliyoruz. Bu durumun tedarikçi performans değerlendirmemizi olumsuz etkileyeceğini hatırlatmak isteriz.\n\n" +
-        "Lütfen aşağıdaki linkten açık sipariş kalemlerinizi BUGÜN güncelleyiniz.\n\n" +
-        "Form Linki: " + link + pwd + "\n\n" +
-        "Konu hakkında iletişime geçmenizi bekliyoruz.\n\n" +
-        "Saygılarımızla,\nÇimtaş Hassas İşleme Satın Alma";
-    }
-  } else if (tip === "gecikme") {
-    const liste = (seciliOrders||[]).map(o => "- [" + o.malzKodu + "] " + o.malzTanim + " (Sipariş: " + o.talepNo + "/" + o.strNo + ", Söz Verilen: " + fmtDate(o.sozTarih) + ")").join("\n");
-    subject = "Teslim Tarihi Asimi - Guncelleme Talebi - " + s.tedUnvan;
-    body = "Sayın " + s.tedUnvan + " Yetkilileri,\n\n" +
-      "Aşağıda listelenen siparişlerimiz, tarafınızca söz verilen teslim tarihlerinde tarafımıza ulaşmamıştır.\n\n" +
-      liste + "\n\n" +
-      "Güncel teslim tarihlerinizi aşağıdaki linkten en kısa sürede güncellemenizi ve gecikmenin nedenini belirtmenizi talep ediyoruz.\n\n" +
-      "Form Linki: " + link + pwd + "\n\n" +
-      "Saygılarımızla,\nÇimtaş Hassas İşleme Satın Alma";
-  } else if (tip === "acil") {
-    const liste = (seciliOrders||[]).map(o => "- [" + o.malzKodu + "] " + o.malzTanim + " (" + o.talepNo + "/" + o.strNo + ")").join("\n");
-    subject = "ACİL: Üretim Kritik Sipariş Hızlandırma Talebi - " + s.tedUnvan;
-    body = "Sayın " + s.tedUnvan + " Yetkilileri,\n\n" +
-      "Aşağıdaki kalemler üretim süreçlerimiz açısından kritik öneme sahip olup teslimatın mümkün olan en kısa sürede gerçekleştirilmesi gerekmektedir.\n\n" +
-      liste + "\n\n" +
-      "Mevcut üretim tarihleri göz önünde bulundurulduğunda bu malzemelerin gecikmesi halinde ciddi aksaklıklar yaşanacaktır. Teslimat tarihini öne çekme imkânınız olup olmadığını ve güncel durumu en kısa sürede iletmenizi rica ederiz.\n\n" +
-      "Form Linki: " + link + pwd + "\n\n" +
-      "Saygılarımızla,\nÇimtaş Hassas İşleme Satın Alma";
-  } else {
-    // hizlandir
-    const liste = (seciliOrders||[]).map(o => "- [" + o.malzKodu + "] " + o.malzTanim + " (" + o.talepNo + "/" + o.strNo + ")").join("\n");
-    subject = "Siparis Hizlandirma Talebi - " + s.tedUnvan;
-    body = "Sayın " + s.tedUnvan + " Yetkilileri,\n\n" +
-      "Aşağıdaki kalemlerin teslimatının hızlandırılmasını talep ediyoruz:\n\n" +
-      liste + "\n\n" +
-      "En kısa sürede dönüş yapmanızı rica ederiz.\n\n" +
-      "Saygılarımızla,\nÇimtaş Hassas İşleme Satın Alma";
-  }
-  return { subject, body, emails: normalizeEmails(s.mail) };
-}
-
-window.openMailFor = function(tedNo, tip, hatirlatmaNo) {
-  const suppliers = supplierStats();
-  const s = suppliers.find(x => x.tedNo === tedNo);
-  if (!s) return;
-  const secili = s.orders.filter(o => {
-    const el = document.getElementById("hiz-chk-"+o.id);
-    return el && el.checked;
+    return {...s,status:st,mail:sup.mail||"",mailSayisi,hatirlatmaGereken,daysSince};
   });
-  const { subject, body, emails } = buildMailContent(s, tip, secili, hatirlatmaNo);
-  if (!emails.length) { flash("Bu tedarikçinin mail adresi tanımlı değil.", "warn"); return; }
-  showMailModal({
-    to: emails.join("; "),
-    subject, body,
-    onConfirm: async () => {
-      openMailto("mailto:" + emails.join(";") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body));
-      await logMail(tedNo, s.tedUnvan, tip, hatirlatmaNo || 1);
-      flash("Mail gönderildi ve kaydedildi.");
-      if (_dashTab === "ozet" || _dashTab === "hatirlatma") {
-        await loadDashData();
-        renderDashTab(_dashTab);
-      }
-    }
+}
+
+function renderDash(){
+  const sups=getSupStats();
+  const missingMail=_D.orders.filter(o=>!_D.haric.has(o.tedNo)&&!(_D.sups[o.tedNo]&&_D.sups[o.tedNo].mail)).map(o=>o.tedUnvan).filter((v,i,a)=>a.indexOf(v)===i);
+  
+  // WARN BANNER - eksik mail
+  const warnEl=document.getElementById("warn-area");
+  if(warnEl){
+    warnEl.innerHTML=missingMail.length?`
+    <div class="warn-banner">
+      <span style="font-size:18px">⚠️</span>
+      <div>
+        <div class="fw7" style="color:#92400e;margin-bottom:2px">${missingMail.length} tedarikçinin mail adresi eksik</div>
+        <ul>${missingMail.slice(0,5).map(n=>`<li>${esc(n)}</li>`).join("")}${missingMail.length>5?`<li>...ve ${missingMail.length-5} tane daha</li>`:""}</ul>
+        <button class="btn btn-ghost btn-sm mt8" onclick="navigate('view=admin&tab=suppliers')" style="margin-top:8px">Tedarikçi Listesine Git →</button>
+      </div>
+    </div>`:"";
+  }
+
+  // STATS
+  const totals={
+    toplam:sups.length,
+    tamamlandi:sups.filter(s=>s.status==="tamamlandi").length,
+    gecikti:sups.filter(s=>s.status==="gecikti").length,
+    bekliyor:sups.filter(s=>s.status==="bekliyor"||s.status==="kismi").length,
+    hatirlatma:sups.filter(s=>s.hatirlatmaGereken.length>0&&s.status!=="tamamlandi").length
+  };
+  const statEl=document.getElementById("stat-cards");
+  if(statEl) statEl.innerHTML=`
+    <div class="stat ${_D.filter==="hepsi"?"active":""}" onclick="setFilter('hepsi')"><div class="stat-val c-navy">${totals.toplam}</div><div class="stat-lbl">Tedarikçi</div></div>
+    <div class="stat ${_D.filter==="tamamlandi"?"active":""}" onclick="setFilter('tamamlandi')"><div class="stat-val c-green">${totals.tamamlandi}</div><div class="stat-lbl">Tamamlandı</div></div>
+    <div class="stat ${_D.filter==="bekliyor"?"active":""}" onclick="setFilter('bekliyor')"><div class="stat-val c-amber">${totals.bekliyor}</div><div class="stat-lbl">Bekliyor</div></div>
+    <div class="stat ${_D.filter==="gecikti"?"active":""}" onclick="setFilter('gecikti')"><div class="stat-val c-red">${totals.gecikti}</div><div class="stat-lbl">Gecikti</div></div>
+    <div class="stat ${_D.filter==="hatirlatma"?"active":""}" onclick="setFilter('hatirlatma')"><div class="stat-val c-orange">${totals.hatirlatma}</div><div class="stat-lbl">🔔 Hatırlatma</div></div>`;
+
+  // FILTER & SEARCH
+  let filtered=sups;
+  if(_D.filter==="tamamlandi") filtered=sups.filter(s=>s.status==="tamamlandi");
+  else if(_D.filter==="bekliyor") filtered=sups.filter(s=>s.status==="bekliyor"||s.status==="kismi");
+  else if(_D.filter==="gecikti") filtered=sups.filter(s=>s.status==="gecikti");
+  else if(_D.filter==="hatirlatma") filtered=sups.filter(s=>s.hatirlatmaGereken.length>0&&s.status!=="tamamlandi");
+  if(_D.search) filtered=filtered.filter(s=>s.tedUnvan.toLowerCase().includes(_D.search)||s.tedNo.includes(_D.search));
+
+  // Öncelik sırası: gecikti > hatırlatma > bekliyor > kismi > tamamlandi
+  const ORDER={gecikti:0,bekliyor:1,kismi:2,tamamlandi:3};
+  filtered.sort((a,b)=>{
+    if(a.hatirlatmaGereken.length&&!b.hatirlatmaGereken.length) return -1;
+    if(!a.hatirlatmaGereken.length&&b.hatirlatmaGereken.length) return 1;
+    return (ORDER[a.status]||9)-(ORDER[b.status]||9);
+  });
+
+  // LIST
+  const listEl=document.getElementById("sup-list");
+  if(!listEl) return;
+  if(!filtered.length){listEl.innerHTML='<div style="padding:40px;text-align:center;color:var(--lgray)">Sonuç bulunamadı.</div>';return;}
+
+  listEl.innerHTML=filtered.map(s=>{
+    const pct=s.orders.length?Math.round(s.hatirlatmaGereken.length===0&&s.status==="tamamlandi"?100:s.orders.filter(o=>(_D.resp[o.id]||{}).savedAt).length/s.orders.length*100):0;
+    const barColor=s.status==="tamamlandi"?"var(--green)":s.status==="gecikti"?"var(--red)":s.status==="kismi"?"var(--amber)":"var(--orange)";
+    const stBadge=s.status==="tamamlandi"?'<span class="badge b-green">✓ Tamamlandı</span>':s.status==="gecikti"?'<span class="badge b-red">Gecikti</span>':s.status==="kismi"?'<span class="badge b-amber">Kısmi</span>':'<span class="badge b-amber">Bekliyor</span>';
+    const hatNo=Math.min(s.mailSayisi+1,3);
+    const gecikmisOrders=s.orders.filter(o=>orderStatus(o,_D.resp[o.id]||{})==="gecikti");
+
+    return `
+    <div class="sup-row" id="srow-${esc(s.tedNo)}" style="border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer" onclick="toggleDetail('${esc(s.tedNo)}')">
+        <input type="checkbox" id="schk-${esc(s.tedNo)}" onclick="event.stopPropagation()" onchange="updateTopluBtn()">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+            <span class="fw6 truncate" style="max-width:260px">${esc(s.tedUnvan)}</span>
+            ${stBadge}
+            ${s.hatirlatmaGereken.length&&s.status!=="tamamlandi"?`<span class="badge b-orange">🔔 ${s.hatirlatmaGereken.length} kalem</span>`:""}
+            ${s.mailSayisi>0?`<span class="badge b-gray text-xs">${s.mailSayisi}. hatırlatma yapıldı</span>`:""}
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="prog" style="width:100px"><div class="prog-bar" style="width:${pct}%;background:${barColor}"></div></div>
+            <span class="text-xs" style="color:var(--lgray)">${s.orders.filter(o=>(_D.resp[o.id]||{}).savedAt).length}/${s.orders.length}</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0" onclick="event.stopPropagation()">
+          ${s.mail?`
+          <button class="btn btn-ghost btn-sm" onclick="sendMail('${esc(s.tedNo)}','${esc(s.tedUnvan)}','${esc(s.mail)}','hatirlatma',${hatNo},null)" title="${hatNo}. hatırlatma">
+            ✉ ${s.mailSayisi>0?"Hatırlatma":"Mail At"}
+          </button>`:'<span class="text-xs" style="color:var(--lgray)">Mail yok</span>'}
+          ${gecikmisOrders.length&&s.mail?`<button class="btn btn-red btn-sm" onclick="sendMail('${esc(s.tedNo)}','${esc(s.tedUnvan)}','${esc(s.mail)}','gecikme',1,${JSON.stringify(gecikmisOrders.map(o=>({malzKodu:o.malzKodu,malzTanim:o.malzTanim,sozTarih:o.sozTarih}))).replace(/"/g,"&quot;")})">⚠ Gecikme</button>`:""}
+        </div>
+        <span id="chev-${esc(s.tedNo)}" style="color:var(--lgray);font-size:12px;margin-left:4px">▶</span>
+      </div>
+      <div id="sdetail-${esc(s.tedNo)}" class="hidden" style="background:#FAFBFF;border-top:1px solid var(--border);padding:12px 14px">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Talep</th><th>Malz. Kodu</th><th>Malzeme</th><th>Bağlanmamış</th><th>Söz Verilen</th><th>Yeni Tarih</th><th>Not</th><th>Durum</th>
+            </tr></thead>
+            <tbody>
+              ${s.orders.map(o=>{
+                const r=_D.resp[o.id]||{};
+                const st2=orderStatus(o,r);
+                const tarih=r.yeniTarih||o.sozTarih;
+                const u=daysUntil(tarih);
+                const d=st2==="gecikti"?'<span class="badge b-red">Gecikmiş</span>':st2==="girildi"?'<span class="badge b-green">✓ Girildi</span>':'<span class="badge b-amber">Bekliyor</span>';
+                return `<tr class="${st2==="gecikti"?"late":st2==="girildi"?"done":""}">
+                  <td class="mono">${esc(o.talepTipi)} ${esc(o.talepNo)}/${esc(o.strNo)}</td>
+                  <td class="mono">${esc(o.malzKodu)}</td>
+                  <td class="truncate" style="max-width:180px">${esc(o.malzTanim)}</td>
+                  <td>${esc(o.bagMiktar)}</td>
+                  <td>${fmtDate(o.sozTarih)}</td>
+                  <td class="fw6">${r.yeniTarih?fmtDate(r.yeniTarih):"—"}</td>
+                  <td style="max-width:100px;color:var(--gray)">${esc(r.not||"—")}</td>
+                  <td>${d}</td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+        ${s.orders.filter(o=>o.acil).length?`<div class="mt8"><button class="btn btn-primary btn-sm" onclick="sendMail('${esc(s.tedNo)}','${esc(s.tedUnvan)}','${esc(s.mail)}','acil',1,${JSON.stringify(s.orders.filter(o=>o.acil).map(o=>({malzKodu:o.malzKodu,malzTanim:o.malzTanim}))).replace(/"/g,"&quot;")})">🚨 Acil Kalemlere Mail</button></div>`:""}
+      </div>
+    </div>`;
+  }).join("");
+
+  window.toggleDetail=function(tedNo){
+    const d=document.getElementById("sdetail-"+tedNo);
+    const c=document.getElementById("chev-"+tedNo);
+    if(!d) return;
+    const h=d.classList.toggle("hidden");
+    if(c) c.textContent=h?"▶":"▼";
+  };
+}
+
+window.setFilter=function(f){_D.filter=f;renderDash();};
+window.setSearch=function(q){_D.search=q.toLowerCase();renderDash();};
+window.toggleAll=function(checked){document.querySelectorAll("[id^='schk-']").forEach(el=>el.checked=checked);updateTopluBtn();};
+window.updateTopluBtn=function(){
+  const any=Array.from(document.querySelectorAll("[id^='schk-']:checked")).length>0;
+  const btn=document.getElementById("toplu-btn");
+  if(btn) btn.style.display=any?"":"none";
+};
+
+window.sendMail=async function(tedNo, tedUnvan, mail, tip, hatNo, kalemlerJson){
+  const link=buildLink(tedNo);
+  const kalemler=kalemlerJson?JSON.parse(kalemlerJson.replace(/&quot;/g,'"')):null;
+  const {subj,body}=buildMail(tedUnvan,tip,link,_D.pwd,hatNo,kalemler);
+  const emails=normalizeEmails(mail);
+  if(!emails.length){flash("Mail adresi yok.","warn");return;}
+  showMailPreview(emails.join("; "),subj,body,async()=>{
+    openMailto("mailto:"+emails.join(";")+`?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`);
+    await logMail(tedNo,tedUnvan,tip,hatNo||1);
+    flash("Mail gönderildi.");
+    await loadDashData();
+    renderDash();
   });
 };
 
-window.topluMail = function(tip) {
-  const suppliers = supplierStats();
-  const hedefler = tip === "tumu" ? suppliers.filter(s => s.status !== "tamamlandi" && s.mail && !s.isHaric) :
-                   tip === "gecikti" ? suppliers.filter(s => s.status === "gecikti" && s.mail && !s.isHaric) :
-                   suppliers.filter(s => s.hatirlatmaGereken.length > 0 && s.mail && !s.isHaric);
-  if (!hedefler.length) { flash("Uygun tedarikçi bulunamadı.", "warn"); return; }
-  let idx = 0;
-  function next() {
-    if (idx >= hedefler.length) { flash(hedefler.length + " mail hazırlandı."); return; }
-    const s = hedefler[idx++];
-    const { subject, body, emails } = buildMailContent(s, "hatirlatma");
-    openMailto("mailto:" + emails.join(";") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body));
-    setTimeout(next, 1500);
+window.topluMailSec=function(){
+  const secili=Array.from(document.querySelectorAll("[id^='schk-']:checked")).map(el=>el.id.replace("schk-",""));
+  if(!secili.length){flash("Hiç seçilmedi.","warn");return;}
+  const sups=getSupStats();
+  const hedefler=sups.filter(s=>secili.includes(s.tedNo)&&s.mail);
+  if(!hedefler.length){flash("Seçili tedarikçilerin mail adresi yok.","warn");return;}
+  let idx=0;
+  function next(){
+    if(idx>=hedefler.length){flash(hedefler.length+" mail gönderildi.");loadDashData().then(renderDash);return;}
+    const s=hedefler[idx++];
+    const link=buildLink(s.tedNo);
+    const hatNo=Math.min(s.mailSayisi+1,3);
+    const {subj,body}=buildMail(s.tedUnvan,"hatirlatma",link,_D.pwd,hatNo,null);
+    const emails=normalizeEmails(s.mail);
+    openMailto("mailto:"+emails.join(";")+`?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`);
+    logMail(s.tedNo,s.tedUnvan,"hatirlatma",hatNo);
+    setTimeout(next,1800);
   }
   next();
 };
 
-function renderDashTab(tab) {
-  const content = document.getElementById("dash-content");
-  if (tab === "ozet") renderOzet(content);
-  else if (tab === "tablo") renderTablo(content);
-  else if (tab === "donusler") renderDonusler(content);
-  else if (tab === "gecikmis") renderGecikmis(content);
-  else if (tab === "acil") renderAcilDash(content);
-  else if (tab === "hatirlatma") renderHatirlatma(content);
-}
-
-function renderOzet(el) {
-  const suppliers = supplierStats();
-  const totals = {
-    toplam: suppliers.length,
-    tamamlandi: suppliers.filter(s => s.status==="tamamlandi").length,
-    kismi: suppliers.filter(s => s.status==="kismi").length,
-    gecikti: suppliers.filter(s => s.status==="gecikti").length,
-    bekliyor: suppliers.filter(s => s.status==="bekliyor").length,
-    hatirlatma: suppliers.filter(s => s.hatirlatmaGereken.length > 0 && !s.isHaric).length
-  };
-  const totalOrders = _dashOrders.filter(o => !_dashHaric.has(o.tedNo)).length;
-  const totalDone = _dashOrders.filter(o => !_dashHaric.has(o.tedNo) && _dashResponses[o.id] && _dashResponses[o.id].savedAt).length;
-
-  el.innerHTML = `
-  <div class="grid5 mb20" style="margin-bottom:20px">
-    <div class="stat"><div class="stat-val c-navy">${totals.toplam}</div><div class="stat-lbl">Tedarikçi</div></div>
-    <div class="stat"><div class="stat-val c-green">${totals.tamamlandi}</div><div class="stat-lbl">Tamamlandı</div></div>
-    <div class="stat"><div class="stat-val" style="color:var(--amber)">${totals.kismi}</div><div class="stat-lbl">Kısmi</div></div>
-    <div class="stat"><div class="stat-val c-red">${totals.gecikti}</div><div class="stat-lbl">Gecikti</div></div>
-    <div class="stat"><div class="stat-val c-orange">${totals.hatirlatma}</div><div class="stat-lbl">Hatırlatma</div></div>
-  </div>
-  <div class="grid2 mb20" style="margin-bottom:20px">
-    <div class="stat">
-      <div class="flex gap8 mb8">
-        <div class="flex-1"><div class="stat-val c-navy">${totalDone} / ${totalOrders}</div><div class="stat-lbl">Yanıtlanan Satır</div></div>
-      </div>
-      <div class="prog" style="width:100%;height:8px"><div class="prog-bar" style="width:${totalOrders?Math.round(totalDone/totalOrders*100):0}%;background:var(--orange)"></div></div>
-    </div>
-    <div class="stat">
-      <div class="stat-val c-navy">${_dashUploadedAt ? fmtDate(_dashUploadedAt) : "—"}</div>
-      <div class="stat-lbl">Son Yükleme Tarihi</div>
-    </div>
-  </div>
-
-  <div class="section-hdr">
-    <span class="section-title">Tedarikçi Durumu</span>
-    <div class="flex gap8">
-      <button class="btn btn-ghost btn-sm" onclick="topluMail('hatirlatma')">🔔 Hatırlatma Gerektirenlere Toplu Mail</button>
-      <button class="btn btn-ghost btn-sm" onclick="topluMail('tumu')">✉ Tümüne Mail</button>
-    </div>
-  </div>
-
-  <div class="search-wrap mb12">
-    <span class="search-icon">🔍</span>
-    <input type="text" placeholder="Tedarikçi ara..." oninput="filterOzet(this.value)" id="ozet-search" />
-  </div>
-
-  <div class="card" id="ozet-list">
-    ${suppliers.map(s => {
-      const pct = s.total > 0 ? Math.round(s.submitted/s.total*100) : 0;
-      const barColor = s.status==="tamamlandi" ? "#16a34a" : s.status==="gecikti" ? "#dc2626" : s.status==="kismi" ? "#f59e0b" : "var(--orange)";
-      return `
-      <div class="ozet-row" data-search="${esc(s.tedUnvan.toLowerCase())} ${esc(s.tedNo)}" style="border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;flex-wrap:wrap" onclick="toggleOzetDetail('${esc(s.tedNo)}')">
-          <div style="flex:1;min-width:200px">
-            <div class="flex gap8 mb4 flex-wrap">
-              <span class="fw6 text-sm truncate" style="max-width:280px">${esc(s.tedUnvan)}</span>
-              ${statusBadge(s.status)}
-              ${s.hatirlatmaGereken.length > 0 && s.status !== "tamamlandi" ? '<span class="badge b-orange">🔔 '+s.hatirlatmaGereken.length+'</span>' : ""}
-            </div>
-            <div class="flex gap8">
-              <div class="prog"><div class="prog-bar" style="width:${pct}%;background:${barColor}"></div></div>
-              <span class="text-xs c-lgray">${s.submitted}/${s.total}</span>
-            </div>
-          </div>
-          <div class="flex gap8" onclick="event.stopPropagation()">
-            ${s.isHaric ? '<span class="text-xs c-lgray">—</span>' : s.mail ? `<button class="btn btn-ghost btn-sm" onclick="openMailFor('${esc(s.tedNo)}','hatirlatma',${s.hatirlatmaGereken.length > 0 ? (s.hatirlatmaGereken.length > 2 ? 3 : s.hatirlatmaGereken.length) : 1})">✉ Mail</button>` : '<span class="text-xs c-lgray">Mail yok</span>'}
-            <span style="color:#94A3B8;font-size:16px" id="chev-${esc(s.tedNo)}">▶</span>
-          </div>
-        </div>
-        <div id="ozet-detail-${esc(s.tedNo)}" class="hidden" style="background:#F8FAFC;border-top:1px solid var(--border);padding:12px 16px">
-          <div class="overflow-x rounded border" style="background:white">
-            <table class="tbl">
-              <thead><tr>
-                <th><input type="checkbox" onchange="toggleAllOzetRows('${esc(s.tedNo)}',this.checked)" title="Tümünü seç/kaldır" /></th>
-                <th>Talep</th><th>Malz. Kodu</th><th>Malzeme</th><th>Bağlanmamış</th><th>Söz Verilen</th><th>Yeni Tarih</th><th>Durum</th>
-              </tr></thead>
-              <tbody>
-                ${s.orders.map(o => {
-                  const r = _dashResponses[o.id] || {};
-                  const until = daysUntil(r.yeniTarih || o.sozTarih);
-                  const isLate = until !== null && until < 0;
-                  const durum = r.savedAt ? '<span class="badge b-green" style="font-size:10px">✓</span>' : isLate ? '<span class="badge b-red" style="font-size:10px">Geç</span>' : '<span class="badge b-orange" style="font-size:10px">Bekliyor</span>';
-                  return `<tr class="${isLate?"late":""}">
-                    <td><input type="checkbox" class="ozet-row-chk" data-ted="${esc(s.tedNo)}" data-id="${esc(o.id)}" checked /></td>
-                    <td class="mono">${esc(o.talepTipi)} ${esc(o.talepNo)}/${esc(o.strNo)}</td>
-                    <td class="mono">${esc(o.malzKodu)}</td>
-                    <td class="truncate" style="max-width:180px">${esc(o.malzTanim)}</td>
-                    <td>${esc(o.bagMiktar)}</td>
-                    <td>${fmtDate(o.sozTarih)}</td>
-                    <td class="fw6">${r.yeniTarih ? fmtDate(r.yeniTarih) : "—"}</td>
-                    <td>${durum}</td>
-                  </tr>`;
-                }).join("")}
-              </tbody>
-            </table>
-          </div>
-          <div class="flex gap8 mt8" style="flex-wrap:wrap">
-            ${s.mail ? `<button class="btn btn-primary btn-sm" onclick="mailSecililer('${esc(s.tedNo)}','hatirlatma')">✉ Seçilenlere Mail At</button>` : ""}
-            ${s.mail ? `<button class="btn btn-ghost btn-sm" onclick="mailSecililer('${esc(s.tedNo)}','gecikme')">⚠ Gecikme Maili</button>` : ""}
-          </div>
-          <div id="mail-log-${esc(s.tedNo)}" class="mt8"></div>
-        </div>
-      </div>`;
-    }).join("")}
-  </div>`;
-
-  window.toggleOzetDetail = function(tedNo) {
-    const detail = document.getElementById("ozet-detail-" + tedNo);
-    const chev = document.getElementById("chev-" + tedNo);
-    if (!detail) return;
-    const isHidden = detail.classList.contains("hidden");
-    detail.classList.toggle("hidden");
-    if (chev) chev.textContent = isHidden ? "▼" : "▶";
-    if (isHidden) loadMailLogForTed(tedNo);
-  };
-
-  window.toggleAllOzetRows = function(tedNo, checked) {
-    document.querySelectorAll(".ozet-row-chk[data-ted='" + tedNo + "']").forEach(el => el.checked = checked);
-  };
-
-  window.mailSecililer = function(tedNo, tip) {
-    const suppliers = supplierStats();
-    const s = suppliers.find(x => x.tedNo === tedNo);
-    if (!s) return;
-    const seciliIds = Array.from(document.querySelectorAll(".ozet-row-chk[data-ted='" + tedNo + "']:checked")).map(el => el.dataset.id);
-    const seciliOrders = s.orders.filter(o => seciliIds.includes(o.id));
-    const hatNo = tip === "hatirlatma" ? (s.hatirlatmaGereken.length > 2 ? 3 : s.hatirlatmaGereken.length || 1) : 1;
-    const { subject, body, emails } = buildMailContent(s, tip, seciliOrders, hatNo);
-    if (!emails.length) { flash("Mail adresi tanımlı değil.", "warn"); return; }
-    showMailModal({
-      to: emails.join("; "), subject, body,
-      onConfirm: async () => {
-        openMailto("mailto:" + emails.join(";") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body));
-        await logMail(tedNo, s.tedUnvan, tip, hatNo);
-        flash("Mail gönderildi.");
-        loadMailLogForTed(tedNo);
-      }
-    });
-  };
-
-  window.loadMailLogForTed = async function(tedNo) {
-    const logEl = document.getElementById("mail-log-" + tedNo);
-    if (!logEl) return;
-    const logs = await getMailLogByTed(tedNo);
-    if (!logs.length) { logEl.innerHTML = ""; return; }
-    logEl.innerHTML = `<div class="text-xs c-gray fw6 mb4">Mail Geçmişi:</div>` +
-      logs.slice(0,5).map(l => {
-        const d = new Date(l.sent_at);
-        const tip = l.mail_tipi === "hatirlatma" ? "Hatırlatma" : l.mail_tipi === "gecikme" ? "Gecikme" : l.mail_tipi === "acil" ? "Acil" : "Hızlandırma";
-        return `<div class="text-xs c-lgray">${d.toLocaleDateString("tr-TR")} ${d.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})} — ${tip} #${l.hatirlatma_no}</div>`;
-      }).join("");
-  };
-
-  window.filterOzet = function(q) {
-    q = q.toLowerCase();
-    document.querySelectorAll(".ozet-row").forEach(row => {
-      row.style.display = !q || row.dataset.search.includes(q) ? "" : "none";
-    });
-  };
-}
-
-function renderTablo(el) {
-  const q = { val: "" };
-  const visibleOrders = _dashOrders.filter(o => !_dashHaric.has(o.tedNo));
-  el.innerHTML = `
-  <div class="section-hdr">
-    <span class="section-title">Ana Tablo</span>
-    <button class="btn btn-primary btn-sm" onclick="doExport()">⬇ Excel'e Aktar</button>
-  </div>
-  <div class="search-wrap mb12">
-    <span class="search-icon">🔍</span>
-    <input type="text" placeholder="Tedarikçi, malzeme kodu veya tanım ara..." oninput="filterTablo(this.value)" />
-  </div>
-  <div class="card overflow-x">
-    <table class="tbl">
-      <thead><tr>
-        <th>Tedarikçi</th><th>Talep</th><th>Malz. Kodu</th><th>Malzeme Tanımı</th>
-        <th>Bağlanmamış</th><th>Söz Verilen</th><th>Yeni Tarih</th><th>Not</th><th>Durum</th>
-      </tr></thead>
-      <tbody id="tablo-body">
-        ${visibleOrders.map(o => {
-          const r = _dashResponses[o.id] || {};
-          const efTarih2 = r.yeniTarih || o.sozTarih;
-          const until = daysUntil(efTarih2);
-          const isLate = until !== null && until < 0;
-          const durum = isLate && r.savedAt ? '<span class="badge b-red">Gecikmiş (Teslim Edilmedi)</span>' : isLate ? '<span class="badge b-red">Gecikmiş</span>' : r.savedAt ? '<span class="badge b-green">✓ Girildi</span>' : '<span class="badge b-orange">Bekliyor</span>';
-          return `<tr class="${isLate?"late":""}" data-search="${esc((o.tedUnvan+" "+o.malzKodu+" "+o.malzTanim).toLowerCase())}">
-            <td class="truncate" style="max-width:160px">${esc(o.tedUnvan)}</td>
-            <td class="mono">${esc(o.talepTipi)} ${esc(o.talepNo)}/${esc(o.strNo)}</td>
-            <td class="mono">${esc(o.malzKodu)}</td>
-            <td class="truncate" style="max-width:200px">${esc(o.malzTanim)}</td>
-            <td>${esc(o.bagMiktar)}</td>
-            <td>${fmtDate(o.sozTarih)}</td>
-            <td class="fw6">${r.yeniTarih ? fmtDate(r.yeniTarih) : "—"}</td>
-            <td class="truncate" style="max-width:120px;color:var(--gray)">${esc(r.not||"—")}</td>
-            <td>${durum}</td>
-          </tr>`;
-        }).join("")}
-      </tbody>
-    </table>
-  </div>`;
-
-  window.filterTablo = function(q) {
-    q = q.toLowerCase();
-    document.querySelectorAll("#tablo-body tr").forEach(row => {
-      row.style.display = !q || (row.dataset.search && row.dataset.search.includes(q)) ? "" : "none";
-    });
-  };
-}
-
-function renderDonusler(el) {
-  const suppliers = supplierStats();
-  el.innerHTML = `
-  <div class="section-hdr">
-    <span class="section-title">Tedarikçi Dönüşleri</span>
-    <div class="flex gap8">
-      <button class="btn btn-ghost btn-sm" onclick="donuslerTopluMail()">✉ Seçilenlere Mail At</button>
-    </div>
-  </div>
-  <div class="card overflow-x">
-    <table class="tbl">
-      <thead><tr>
-        <th><input type="checkbox" onchange="toggleAllDonusler(this.checked)" /></th>
-        <th>Tedarikçi</th><th>Toplam</th><th>Yanıtlanan</th><th>Bekleyen</th><th>Durum</th><th>Skor</th><th>İlerleme</th><th>Mail</th>
-      </tr></thead>
-      <tbody>
-        ${suppliers.map(s => {
-          const pct = s.total > 0 ? Math.round(s.submitted/s.total*100) : 0;
-          const sup = _dashSuppliers[s.tedNo] || {};
-          const skor = sup.skor !== undefined ? sup.skor : 100;
-          const skorColor = skor >= 80 ? "#16a34a" : skor >= 60 ? "#f59e0b" : "#dc2626";
-          return `<tr>
-            <td><input type="checkbox" class="donusler-chk" data-ted="${esc(s.tedNo)}" /></td>
-            <td class="fw6 truncate" style="max-width:200px">${esc(s.tedUnvan)}</td>
-            <td>${s.total}</td>
-            <td class="c-green fw6">${s.submitted}</td>
-            <td class="${s.total-s.submitted > 0 ? "c-red fw6" : ""}">${s.total-s.submitted}</td>
-            <td>${statusBadge(s.status)}</td>
-            <td><span style="color:${skorColor};font-weight:700">${skor}</span></td>
-            <td><div style="display:flex;align-items:center;gap:8px"><div class="prog" style="width:80px"><div class="prog-bar" style="width:${pct}%;background:${s.status==="tamamlandi"?"#16a34a":"var(--orange)"}"></div></div><span class="text-xs c-lgray">%${pct}</span></div></td>
-            <td>${s.mail && !s.isHaric ? `<button class="btn btn-ghost btn-sm" onclick="openMailFor('${esc(s.tedNo)}','hatirlatma',1)">✉</button>` : "—"}</td>
-          </tr>`;
-        }).join("")}
-      </tbody>
-    </table>
-  </div>`;
-
-  window.toggleAllDonusler = function(checked) {
-    document.querySelectorAll(".donusler-chk").forEach(el => el.checked = checked);
-  };
-
-  window.donuslerTopluMail = function() {
-    const seciliTedler = Array.from(document.querySelectorAll(".donusler-chk:checked")).map(el => el.dataset.ted);
-    if (!seciliTedler.length) { flash("Hiç tedarikçi seçilmedi.", "warn"); return; }
-    const suppliers = supplierStats();
-    const hedefler = suppliers.filter(s => seciliTedler.includes(s.tedNo) && s.mail && !s.isHaric);
-    if (!hedefler.length) { flash("Seçili tedarikçilerin mail adresi yok.", "warn"); return; }
-    let idx = 0;
-    function next() {
-      if (idx >= hedefler.length) { flash(hedefler.length + " mail hazırlandı."); return; }
-      const s = hedefler[idx++];
-      const { subject, body, emails } = buildMailContent(s, "hatirlatma", [], 1);
-      openMailto("mailto:" + emails.join(";") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body));
-      logMail(s.tedNo, s.tedUnvan, "hatirlatma", 1);
-      setTimeout(next, 1500);
-    }
-    next();
-  };
-}
-
-function renderGecikmis(el) {
-  const gecikmisList = _dashOrders.filter(o => {
-    if (_dashHaric.has(o.tedNo)) return false;
-    const r = _dashResponses[o.id] || {};
-    const tarih = r.yeniTarih || o.sozTarih;
-    const until = daysUntil(tarih);
-    return until !== null && until < 0 && !r.savedAt;
-  });
-
-  el.innerHTML = `
-  <div class="section-hdr">
-    <span class="section-title">Gecikmiş Siparişler (${gecikmisList.length})</span>
-    <button class="btn btn-ghost btn-sm" onclick="topluMail('gecikti')">✉ Gecikenlere Toplu Mail</button>
-  </div>
-  ${gecikmisList.length === 0 ? '<div class="card card-pad" style="text-align:center;color:var(--lgray)">Gecikmiş sipariş yok. 🎉</div>' : `
-  <div class="card overflow-x">
-    <table class="tbl">
-      <thead><tr><th>Tedarikçi</th><th>Talep</th><th>Malz. Kodu</th><th>Malzeme Tanımı</th><th>Bağlanmamış</th><th>Söz Verilen Tarih</th><th>Gecikme</th><th>Mail</th></tr></thead>
-      <tbody>
-        ${gecikmisList.map(o => {
-          const r = _dashResponses[o.id] || {};
-          const tarih = r.yeniTarih || o.sozTarih;
-          const gun = Math.abs(daysUntil(tarih)||0);
-          const sup = _dashSuppliers[o.tedNo] || {};
-          return `<tr class="late">
-            <td class="fw6 truncate" style="max-width:140px">${esc(o.tedUnvan)}</td>
-            <td class="mono">${esc(o.talepTipi)} ${esc(o.talepNo)}/${esc(o.strNo)}</td>
-            <td class="mono">${esc(o.malzKodu)}</td>
-            <td class="truncate" style="max-width:180px">${esc(o.malzTanim)}</td>
-            <td>${esc(o.bagMiktar)}</td>
-            <td>${fmtDate(o.sozTarih)}</td>
-            <td><span class="badge b-red">${gun} gün geç</span></td>
-            <td>${sup.mail ? `<button class="btn btn-ghost btn-sm" onclick="openMailFor('${esc(o.tedNo)}','hatirlatma')">✉</button>` : "—"}</td>
-          </tr>`;
-        }).join("")}
-      </tbody>
-    </table>
-  </div>`}`;
-}
-
-function renderAcilDash(el) {
-  const acilList = _dashOrders.filter(o => o.acil && !_dashHaric.has(o.tedNo));
-  el.innerHTML = `
-  <div class="section-hdr">
-    <span class="section-title">Acil Talepler (${acilList.length})</span>
-  </div>
-  ${acilList.length === 0 ? '<div class="card card-pad" style="text-align:center;color:var(--lgray)">Acil olarak işaretlenmiş sipariş yok.</div>' : `
-  <div class="card overflow-x">
-    <table class="tbl">
-      <thead><tr>
-        <th><input type="checkbox" onchange="toggleAllHiz(this.checked)" /></th>
-        <th>Tedarikçi</th><th>Talep</th><th>Malz. Kodu</th><th>Malzeme Tanımı</th><th>Bağlanmamış</th><th>Söz Verilen</th><th>Yeni Tarih</th><th>Durum</th>
-      </tr></thead>
-      <tbody>
-        ${acilList.map(o => {
-          const r = _dashResponses[o.id] || {};
-          const until = daysUntil(r.yeniTarih || o.sozTarih);
-          const isLate = until !== null && until < 0;
-          const durum = r.savedAt ? '<span class="badge b-green">✓</span>' : isLate ? '<span class="badge b-red">Geç</span>' : '<span class="badge b-acil">Bekliyor</span>';
-          return `<tr class="${isLate?"late":""}">
-            <td><input type="checkbox" class="hiz-chk" id="hiz-chk-${o.id}" data-ted="${esc(o.tedNo)}" /></td>
-            <td class="fw6 truncate" style="max-width:140px">${esc(o.tedUnvan)}</td>
-            <td class="mono">${esc(o.talepTipi)} ${esc(o.talepNo)}/${esc(o.strNo)}</td>
-            <td class="mono">${esc(o.malzKodu)}</td>
-            <td class="truncate" style="max-width:180px">${esc(o.malzTanim)}</td>
-            <td>${esc(o.bagMiktar)}</td>
-            <td>${fmtDate(o.sozTarih)}</td>
-            <td class="fw6">${r.yeniTarih ? fmtDate(r.yeniTarih) : "—"}</td>
-            <td>${durum}</td>
-          </tr>`;
-        }).join("")}
-      </tbody>
-    </table>
-  </div>
-  <div class="flex gap8 mt12" style="flex-wrap:wrap">
-    <button class="btn btn-primary btn-sm" onclick="hizlandirSecililer()">⚡ Seçilenleri Hızlandır</button>
-  </div>`}`;
-
-  window.toggleAllHiz = function(checked) {
-    document.querySelectorAll(".hiz-chk").forEach(el => el.checked = checked);
-  };
-
-  window.hizlandirSecililer = function() {
-    const secili = Array.from(document.querySelectorAll(".hiz-chk:checked"));
-    if (!secili.length) { flash("Hiç satır seçilmedi.", "warn"); return; }
-    const byTed = {};
-    secili.forEach(chk => {
-      const ted = chk.dataset.ted;
-      if (!byTed[ted]) byTed[ted] = [];
-      byTed[ted].push(chk.id.replace("hiz-chk-",""));
-    });
-    const teds = Object.keys(byTed);
-    let idx = 0;
-    function next() {
-      if (idx >= teds.length) { flash(teds.length + " hızlandırma maili hazırlandı."); return; }
-      const tedNo = teds[idx++];
-      const sup = _dashSuppliers[tedNo] || {};
-      const emails = normalizeEmails(sup.mail);
-      if (!emails.length) { next(); return; }
-      const orders = _dashOrders.filter(o => byTed[tedNo].includes(o.id));
-      const { subject, body } = buildMailContent({ tedNo, tedUnvan: orders[0].tedUnvan, mail: sup.mail }, "hizlandir", orders);
-      openMailto("mailto:" + emails.join(";") + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body));
-      setTimeout(next, 1500);
-    }
-    next();
-  };
-}
-
-function renderHatirlatma(el) {
-  const suppliers = supplierStats();
-  const hatirlatmaList = suppliers.filter(s => s.hatirlatmaGereken.length > 0 && s.status !== "tamamlandi" && !s.isHaric);
-
-  // Her tedarikçi için kaç kez mail atıldı
-  const mailSayisi = {};
-  _dashMailLog.forEach(l => {
-    if (!mailSayisi[l.ted_no]) mailSayisi[l.ted_no] = 0;
-    mailSayisi[l.ted_no]++;
-  });
-
-  el.innerHTML = `
-  <div class="section-hdr">
-    <span class="section-title">Hatırlatma Gerekenler (${hatirlatmaList.length} tedarikçi)</span>
-    <button class="btn btn-primary btn-sm" onclick="topluMail('hatirlatma')">📨 Tümüne Toplu Hatırlatma</button>
-  </div>
-  ${hatirlatmaList.length === 0 ? '<div class="card card-pad" style="text-align:center;color:var(--lgray)">Hatırlatma gereken tedarikçi yok. ✓</div>' : `
-  <div class="space-y">
-    ${hatirlatmaList.map(s => {
-      const sayac = mailSayisi[s.tedNo] || 0;
-      const hatNo = Math.min(sayac + 1, 3);
-      return `
-    <div class="card">
-      <div style="padding:12px 16px;background:#fffbeb;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div>
-          <span class="fw7 text-sm">${esc(s.tedUnvan)}</span>
-          <span class="text-xs c-lgray" style="margin-left:8px">${s.hatirlatmaGereken.length} kalem bekliyor</span>
-          ${sayac > 0 ? `<span class="badge b-red" style="margin-left:8px;font-size:10px">${sayac}. hatırlatma yapıldı</span>` : ""}
-        </div>
-        <div class="flex gap8">
-          ${s.mail ? `<button class="btn btn-primary btn-sm" onclick="openMailFor('${esc(s.tedNo)}','hatirlatma',${hatNo})">✉ ${hatNo}. Hatırlatma</button>` : '<span class="text-xs c-lgray">Mail adresi yok</span>'}
-          ${s.mail && s.hatirlatmaGereken.some(o => daysUntil(o.sozTarih) < 0) ? `<button class="btn btn-ghost btn-sm" onclick="openMailFor('${esc(s.tedNo)}','gecikme',1)">⚠ Gecikme Maili</button>` : ""}
-        </div>
-      </div>
-      <div class="overflow-x">
-        <table class="tbl">
-          <thead><tr><th>Talep</th><th>Malz. Kodu</th><th>Malzeme</th><th>Söz Verilen</th><th>Gecikme/Durum</th></tr></thead>
-          <tbody>
-            ${s.hatirlatmaGereken.slice(0,5).map(o => {
-              const r = _dashResponses[o.id] || {};
-              const tarih = r.yeniTarih || o.sozTarih;
-              const until = daysUntil(tarih);
-              let durum = until !== null && until < 0 ? '<span class="badge b-red">'+Math.abs(until)+' gün geç</span>' : until === 1 ? '<span class="badge b-orange">Yarın teslim</span>' : '<span class="badge b-orange">'+s.daysSinceUpload+' gündür yanıt yok</span>';
-              return `<tr>
-                <td class="mono">${esc(o.talepTipi)} ${esc(o.talepNo)}/${esc(o.strNo)}</td>
-                <td class="mono">${esc(o.malzKodu)}</td>
-                <td class="truncate" style="max-width:180px">${esc(o.malzTanim)}</td>
-                <td>${fmtDate(o.sozTarih)}</td>
-                <td>${durum}</td>
-              </tr>`;
-            }).join("")}
-            ${s.hatirlatmaGereken.length > 5 ? `<tr><td colspan="5" style="color:var(--lgray);font-size:11px">...${s.hatirlatmaGereken.length-5} kalem daha</td></tr>` : ""}
-          </tbody>
-        </table>
-      </div>
-    </div>`}).join("")}
-  </div>`}`;
-}
+window.exportAll=function(){
+  const headers=["Talep Tipi","Talep No","Str No","JDE Malz. Kodu","Malzeme Tanımı","Orig. Qty","Bağlanmamış","Söz Verilen","Yeni Tarih","Not","Tedarikçi No","Tedarikçi Ünvan","Durum"];
+  const data=[headers,..._D.orders.map(o=>{
+    const r=_D.resp[o.id]||{};
+    const st=orderStatus(o,r);
+    const d=st==="gecikti"?"Gecikmiş":st==="girildi"?"Girildi":"Bekliyor";
+    return[o.talepTipi,o.talepNo,o.strNo,o.malzKodu,o.malzTanim,o.origQty,o.bagMiktar,fmtDate(o.sozTarih),r.yeniTarih?fmtDate(r.yeniTarih):"",r.not||"",o.tedNo,o.tedUnvan,d];
+  })];
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(data,{raw:false});
+  ["H","I"].forEach(col=>{for(let row=1;row<data.length;row++){const a=col+(row+1);if(ws[a])ws[a].t="s";}});
+  ws["!cols"]=[8,10,8,14,30,10,14,14,14,20,10,30,10].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws,"Teslim Takip");
+  XLSX.writeFile(wb,"Teslim_Takip_"+new Date().toISOString().slice(0,10)+".xlsx");
+};
 </script>
 
-<!-- ═══════════════════════════════════
-     ADMIN
-═══════════════════════════════════ -->
+<!-- ═══════ ADMIN ═══════ -->
 <script>
-let _adminTab = "orders";
+let _adminTab="orders";
 
-async function showAdmin() {
-  document.body.innerHTML = `
-  <div class="page">
-    <header>
-      <div class="inner">
-        <a href="?" style="text-decoration:none">${logoHTML(28)}</a>
-        <button class="nav-btn" onclick="navigate('view=dashboard')">📊 Pano</button>
-      </div>
-    </header>
-    <div class="page-tabs">
-      <button class="page-tab active" onclick="switchAdminTab('orders',this)">📥 Sipariş Yükle</button>
-      <button class="page-tab" onclick="switchAdminTab('acil',this)">🚨 Acil Kalemler</button>
-      <button class="page-tab" onclick="switchAdminTab('suppliers',this)">👥 Tedarikçiler</button>
-      <button class="page-tab" onclick="switchAdminTab('settings',this)">⚙️ Ayarlar</button>
+async function showAdmin(){
+  const tab=getParam("tab")||"orders";
+  document.body.innerHTML=`
+  <header>
+    <img src="${LOGO_SRC}" class="logo">
+    <div class="hdr-actions">
+      <button class="hdr-btn ${tab==="orders"?"active":""}" onclick="switchAdmin('orders',this)">📥 Sipariş Yükle</button>
+      <button class="hdr-btn ${tab==="acil"?"active":""}" onclick="switchAdmin('acil',this)">🚨 Acil</button>
+      <button class="hdr-btn ${tab==="suppliers"?"active":""}" onclick="switchAdmin('suppliers',this)">👥 Tedarikçiler</button>
+      <button class="hdr-btn ${tab==="settings"?"active":""}" onclick="switchAdmin('settings',this)">⚙ Ayarlar</button>
+      <button class="hdr-btn" onclick="navigate('')">📊 Pano</button>
     </div>
-    <main>
-      <div id="flash" class="hidden"></div>
+  </header>
+  <div class="page">
+    <div class="max" style="max-width:900px">
       <div id="admin-content"></div>
-    </main>
+    </div>
   </div>`;
 
-  window.switchAdminTab = function(tab, btn) {
-    _adminTab = tab;
-    document.querySelectorAll(".page-tab").forEach(t => t.classList.remove("active"));
+  window.switchAdmin=function(tab,btn){
+    _adminTab=tab;
+    document.querySelectorAll(".hdr-btn").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
     renderAdminTab(tab);
   };
-
-  renderAdminTab("orders");
+  renderAdminTab(tab);
 }
 
-async function renderAdminTab(tab) {
-  const el = document.getElementById("admin-content");
-  if (tab === "orders") await renderOrdersAdmin(el);
-  else if (tab === "acil") await renderAcilAdmin(el);
-  else if (tab === "suppliers") await renderSuppliersAdmin(el);
-  else if (tab === "settings") await renderSettingsAdmin(el);
+async function renderAdminTab(tab){
+  const el=document.getElementById("admin-content");
+  if(!el) return;
+  if(tab==="orders") await renderOrdersAdmin(el);
+  else if(tab==="acil") await renderAcilAdmin(el);
+  else if(tab==="suppliers") await renderSuppliersAdmin(el);
+  else if(tab==="settings") await renderSettingsAdmin(el);
 }
 
-async function renderOrdersAdmin(el) {
-  const orders = await getOrders();
-  const groups = {};
-  orders.forEach(o => { if (!groups[o.tedNo]) groups[o.tedNo]={tedUnvan:o.tedUnvan,count:0}; groups[o.tedNo].count++; });
+// ORDERS ADMIN
+async function renderOrdersAdmin(el){
+  const orders=await getOrders();
+  const groups={};
+  orders.forEach(o=>{if(!groups[o.tedNo])groups[o.tedNo]={n:o.tedUnvan,c:0};groups[o.tedNo].c++;});
 
-  el.innerHTML = `
-  <div class="section-hdr">
-    <span class="section-title">Açık Sipariş Listesi Yükle</span>
+  el.innerHTML=`
+  <div class="card card-body mb16">
+    <div class="fw7" style="font-size:15px;margin-bottom:4px">Açık Sipariş Listesi Yükle</div>
+    <div class="text-xs" style="color:var(--lgray);margin-bottom:16px">A=Talep Tipi · B=Talep No · C=Str No · D=Malz.Kodu · E=Tanım · F=Orig.Qty · G=Bağlanmamış · J=Söz Verilen · L=Ted.No · M=Ted.Ünvan</div>
+    <div class="upload-zone" onclick="document.getElementById('order-file').click()">
+      <div style="font-size:32px;margin-bottom:8px">📂</div>
+      <div class="fw6">Excel dosyası seç veya buraya sürükle</div>
+      <div class="text-xs" style="color:var(--lgray);margin-top:4px">.xlsx veya .xls — Tedarikçi yanıtları korunur</div>
+      <input type="file" id="order-file" accept=".xlsx,.xls" style="display:none" onchange="handleOrderFile(this)">
+    </div>
+    <div id="order-preview" class="hidden mt12"></div>
   </div>
-  <div class="alert alert-info mb16">
-    <span>Her hafta yeni Excel yüklendiğinde eski siparişler ve tedarikçi yanıtları silinir, sıfırdan başlar.</span>
-  </div>
-  <div class="upload-zone mb16" onclick="document.getElementById('order-file').click()">
-    <div style="font-size:32px;margin-bottom:8px">📂</div>
-    <p class="fw6">Excel dosyası seç</p>
-    <p class="text-xs c-lgray mt4">.xlsx veya .xls — A=Talep Tipi, B=Talep No, C=Str No, D=Malz.Kodu, E=Tanım, F=Orig.Qty, G=Bağlanmamış, J=Söz Verilen, L=Ted.No, M=Ted.Ünvan</p>
-    <input type="file" id="order-file" accept=".xlsx,.xls" style="display:none" onchange="handleOrderFile(this)" />
-  </div>
-  <div id="order-preview" class="hidden"></div>
-  ${Object.keys(groups).length > 0 ? `
-  <div class="section-hdr mt24" style="margin-top:24px"><span class="section-title">Tedarikçi Linkleri</span></div>
+  ${Object.keys(groups).length?`
   <div class="card">
-    ${Object.entries(groups).map(([tedNo,g]) => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px">
-      <div>
-        <span class="fw6 text-sm">${esc(g.tedUnvan)}</span>
-        <span class="text-xs c-lgray" style="margin-left:8px">${g.count} satır</span>
-      </div>
-      <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('${esc(buildLink(tedNo))}');flash('Kopyalandı.')">📋 Linki Kopyala</button>
+    <div class="card-body" style="padding-bottom:8px"><span class="fw7">Tedarikçi Linkleri</span></div>
+    ${Object.entries(groups).map(([no,g])=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-top:1px solid var(--border);flex-wrap:wrap;gap:8px">
+      <div><span class="fw6 text-sm">${esc(g.n)}</span><span class="text-xs" style="color:var(--lgray);margin-left:8px">${g.c} satır</span></div>
+      <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('${esc(buildLink(no))}');flash('Kopyalandı.')">📋 Linki Kopyala</button>
     </div>`).join("")}
-  </div>` : ""}`;
+  </div>`:""}`;
 
-  window.handleOrderFile = async function(input) {
-    const file = input.files[0]; if (!file) return;
-    const prev = document.getElementById("order-preview");
-    prev.innerHTML = '<div class="alert alert-info">Okunuyor...</div>';
+  window.handleOrderFile=async function(input){
+    const file=input.files[0];if(!file) return;
+    const prev=document.getElementById("order-preview");
+    prev.innerHTML='<div class="alert alert-info">Okunuyor...</div>';
     prev.classList.remove("hidden");
-    try {
-      const wb = await readExcel(file);
-      const result = parseOrderExcel(wb);
-      if (!result.length) { prev.innerHTML = '<div class="alert alert-err">Veri okunamadı. Sütun sırası doğru mu?</div>'; return; }
-      window._pendingOrders = result;
-      prev.innerHTML = `
-      <div class="card card-pad">
-        <div class="section-hdr"><span class="fw7">Önizleme — ${result.length} satır</span></div>
-        <div class="overflow-x rounded border mb16">
-          <table class="tbl">
-            <thead><tr><th>Tedarikçi</th><th>Talep</th><th>Malz. Kodu</th><th>Malzeme</th><th>Miktar</th><th>Söz Verilen Tarih</th></tr></thead>
-            <tbody>
-              ${result.slice(0,8).map(r => `<tr>
-                <td>${esc(r.tedUnvan)}</td>
-                <td class="mono">${esc(r.talepTipi)} ${esc(r.talepNo)}/${esc(r.strNo)}</td>
-                <td class="mono">${esc(r.malzKodu)}</td>
-                <td class="truncate" style="max-width:160px">${esc(r.malzTanim)}</td>
-                <td>${esc(r.bagMiktar)}</td>
-                <td>${fmtDate(r.sozTarih)}</td>
-              </tr>`).join("")}
-              ${result.length > 8 ? `<tr><td colspan="6" style="color:var(--lgray);font-size:11px">...${result.length-8} satır daha</td></tr>` : ""}
-            </tbody>
-          </table>
+    try{
+      const wb=await readExcelFile(file);
+      const result=parseOrderExcel(wb);
+      if(!result.length){prev.innerHTML='<div class="alert alert-err">Veri okunamadı. Sütun sırası doğru mu?</div>';return;}
+      window._pendingOrders=result;
+      prev.innerHTML=`
+      <div class="card card-body">
+        <div class="fw7 mb8">Önizleme — ${result.length} satır</div>
+        <div class="tbl-wrap mb12">
+          <table><thead><tr><th>Tedarikçi</th><th>Talep</th><th>Malz.Kodu</th><th>Malzeme</th><th>Söz Verilen</th></tr></thead>
+          <tbody>${result.slice(0,6).map(r=>`<tr>
+            <td>${esc(r.tedUnvan)}</td><td class="mono">${esc(r.talepTipi)} ${esc(r.talepNo)}/${esc(r.strNo)}</td>
+            <td class="mono">${esc(r.malzKodu)}</td><td style="max-width:160px" class="truncate">${esc(r.malzTanim)}</td><td>${fmtDate(r.sozTarih)}</td>
+          </tr>`).join("")}${result.length>6?`<tr><td colspan="5" style="color:var(--lgray)">...${result.length-6} satır daha</td></tr>`:""}</tbody></table>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <p class="text-sm c-gray">Mevcut sipariş listesi güncellenecek. Tedarikçi yanıtları <strong>korunacak</strong>.</p>
+          <span class="text-xs" style="color:var(--lgray)">Mevcut sipariş listesi değişecek. Yanıtlar korunacak.</span>
           <button class="btn btn-primary" onclick="doSaveOrders()">💾 ${result.length} satırı kaydet</button>
         </div>
       </div>`;
-    } catch(e) {
-      prev.innerHTML = `<div class="alert alert-err">Hata: ${esc(e.message)}</div>`;
-    }
+    }catch(e){prev.innerHTML=`<div class="alert alert-err">Hata: ${esc(e.message)}</div>`;}
   };
 
-  window.doSaveOrders = async function() {
-    const rows = window._pendingOrders;
-    if (!rows || !rows.length) return;
-    const btn = document.querySelector("[onclick='doSaveOrders()']");
-    if (btn) { btn.disabled = true; btn.textContent = "Kaydediliyor..."; }
-    try {
+  window.doSaveOrders=async function(){
+    const rows=window._pendingOrders;if(!rows||!rows.length) return;
+    const btn=document.querySelector("[onclick='doSaveOrders()']");
+    if(btn){btn.disabled=true;btn.textContent="Kaydediliyor...";}
+    try{
       await uploadOrders(rows);
-      flash(rows.length + " satır kaydedildi.");
-      window._pendingOrders = null;
+      flash(rows.length+" satır kaydedildi.");
+      window._pendingOrders=null;
       await renderOrdersAdmin(document.getElementById("admin-content"));
-    } catch(e) {
-      flash("Hata: " + e.message, "err");
-      if (btn) { btn.disabled = false; btn.textContent = "Kaydet"; }
-    }
+    }catch(e){flash("Hata: "+e.message,"err");if(btn){btn.disabled=false;btn.textContent="Kaydet";}}
   };
 }
 
-async function renderAcilAdmin(el) {
-  const orders = await getOrders();
-  if (!orders.length) { el.innerHTML = '<div class="card card-pad" style="text-align:center;color:var(--lgray)">Önce sipariş yükleyin.</div>'; return; }
-  const groups = new Map();
-  orders.forEach(o => { if (!groups.has(o.tedNo)) groups.set(o.tedNo,{tedUnvan:o.tedUnvan,orders:[]}); groups.get(o.tedNo).orders.push(o); });
+// ACIL ADMIN
+async function renderAcilAdmin(el){
+  const orders=await getOrders();
+  if(!orders.length){el.innerHTML='<div class="card card-body" style="text-align:center;color:var(--lgray)">Önce sipariş yükleyin.</div>';return;}
+  const groups=new Map();
+  orders.forEach(o=>{if(!groups.has(o.tedNo))groups.set(o.tedNo,{n:o.tedUnvan,orders:[]});groups.get(o.tedNo).orders.push(o);});
 
-  el.innerHTML = `
-  <div class="section-hdr">
-    <span class="section-title">Acil Kalemler</span>
-  </div>
-  <p class="text-sm c-gray mb16">İşaretlenen kalemler tedarikçi formunda kırmızı ACİL rozeti ile en üstte gösterilir.</p>
-  <div class="search-wrap mb12">
+  el.innerHTML=`
+  <div class="fw7 mb12" style="font-size:15px">Acil Kalemler</div>
+  <div class="text-xs mb16" style="color:var(--lgray)">İşaretlenen kalemler tedarikçi formunda ACİL rozeti ile en üstte gösterilir.</div>
+  <div class="search-box mb12" style="max-width:400px">
     <span class="search-icon">🔍</span>
-    <input type="text" placeholder="Tedarikçi, malzeme kodu veya tanım ara..." oninput="filterAcilAdmin(this.value)" />
+    <input type="text" placeholder="Malzeme kodu veya tanım ara..." oninput="filterAcil(this.value)">
   </div>
-  <div class="space-y" id="acil-admin-list">
-    ${Array.from(groups.entries()).map(([tedNo,g]) => `
-    <div class="card" id="acilgrp-${esc(tedNo)}">
-      <div style="padding:10px 16px;background:#F5F6F8;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-        <span class="fw7 text-sm">${esc(g.tedUnvan)}</span>
+  <div class="space-y" id="acil-list">
+    ${Array.from(groups.entries()).map(([tedNo,g])=>`
+    <div class="card" id="acilg-${esc(tedNo)}">
+      <div style="padding:10px 14px;background:#F8FAFC;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <span class="fw7 text-sm">${esc(g.n)}</span>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--gray)">
-          <input type="checkbox" onchange="toggleTedAcil('${esc(tedNo)}',this.checked)" ${g.orders.every(o=>o.acil)?"checked":""} />
-          Tümü
+          <input type="checkbox" onchange="toggleTedAcil('${esc(tedNo)}',this.checked)" ${g.orders.every(o=>o.acil)?"checked":""}>Tümü
         </label>
       </div>
-      <div>
-        ${g.orders.map(o => `
-        <label class="acil-item" data-search="${esc((g.tedUnvan+" "+o.malzKodu+" "+o.malzTanim).toLowerCase())}"
-          style="display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;border-bottom:1px solid var(--border)"
-          onmouseenter="this.style.background='#fffaf8'" onmouseleave="this.style.background=''">
-          <input type="checkbox" id="acil-${o.id}" ${o.acil?"checked":""} onchange="toggleAcilItem('${esc(o.id)}',this.checked)" />
-          <div style="flex:1;min-width:0">
-            <div class="flex gap8 mb4">
-              <span class="mono" style="background:#f1f5f9;padding:1px 6px;border-radius:4px;font-size:11px">${esc(o.malzKodu)}</span>
-              ${o.acil ? '<span class="badge b-acil" style="font-size:9px">ACİL</span>' : ""}
-            </div>
-            <p class="text-sm truncate">${esc(o.malzTanim)}</p>
-            <p class="text-xs c-lgray mono">${esc(o.talepTipi)} ${esc(o.talepNo)}/${esc(o.strNo)} — ${esc(o.bagMiktar)}</p>
+      ${g.orders.map(o=>`
+      <label class="acil-item" data-s="${esc((o.malzKodu+" "+o.malzTanim).toLowerCase())}"
+        style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;border-top:1px solid var(--border)"
+        onmouseenter="this.style.background='#fffaf8'" onmouseleave="this.style.background=''">
+        <input type="checkbox" id="acil-${esc(o.id)}" ${o.acil?"checked":""} onchange="setAcil('${esc(o.id)}',this.checked)">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:11px">${esc(o.malzKodu)}</code>
+            ${o.acil?'<span class="badge b-acil">ACİL</span>':""}
           </div>
-        </label>`).join("")}
-      </div>
+          <div class="text-sm truncate">${esc(o.malzTanim)}</div>
+          <div class="mono text-xs" style="color:var(--lgray)">${esc(o.talepTipi)} ${esc(o.talepNo)}/${esc(o.strNo)} · ${esc(o.bagMiktar)}</div>
+        </div>
+      </label>`).join("")}
     </div>`).join("")}
   </div>`;
 
-  window.filterAcilAdmin = function(q) {
-    q = q.toLowerCase();
-    document.querySelectorAll(".acil-item").forEach(item => {
-      item.style.display = !q || item.dataset.search.includes(q) ? "" : "none";
-    });
-    document.querySelectorAll("[id^='acilgrp-']").forEach(grp => {
-      const vis = Array.from(grp.querySelectorAll(".acil-item")).some(i => i.style.display !== "none");
-      grp.style.display = vis ? "" : "none";
+  window.filterAcil=function(q){
+    q=q.toLowerCase();
+    document.querySelectorAll(".acil-item").forEach(item=>{item.style.display=!q||item.dataset.s.includes(q)?"":"none";});
+    document.querySelectorAll("[id^='acilg-']").forEach(g=>{
+      g.style.display=Array.from(g.querySelectorAll(".acil-item")).some(i=>i.style.display!=="none")?"":"none";
     });
   };
-
-  window.toggleAcilItem = async function(id, acil) {
-    try { await setAcil(id, acil); flash("Kaydedildi."); }
-    catch(e) { flash("Hata: "+e.message, "err"); }
-  };
-
-  window.toggleTedAcil = async function(tedNo, checked) {
-    const order = orders.filter(o => o.tedNo === tedNo);
-    for (const o of order) {
-      const el = document.getElementById("acil-"+o.id);
-      if (el) el.checked = checked;
-      try { await setAcil(o.id, checked); } catch(e) {}
+  window.toggleTedAcil=async function(tedNo,checked){
+    const items=document.querySelectorAll(`[id^='acil-'][id$='']`);
+    for(const o of orders.filter(o=>o.tedNo===tedNo)){
+      const el=document.getElementById("acil-"+o.id);if(el) el.checked=checked;
+      try{await setAcil(o.id,checked);}catch(e){}
     }
     flash("Kaydedildi.");
   };
 }
 
-async function renderSuppliersAdmin(el) {
-  const smap = await getSuppliers();
-  const list = Object.values(smap).sort((a,b) => (a.name||"").localeCompare(b.name||"","tr"));
+// SUPPLIERS ADMIN
+async function renderSuppliersAdmin(el){
+  const smap=await getSuppliers();
+  const list=Object.values(smap).sort((a,b)=>(a.name||"").localeCompare(b.name||"","tr"));
 
-  el.innerHTML = `
-  <div class="section-hdr">
-    <span class="section-title">Tedarikçi Listesi</span>
-    <div class="flex gap8">
-      <div class="upload-zone" style="padding:8px 16px;cursor:pointer" onclick="document.getElementById('sup-file').click()">
-        <span class="text-sm c-gray">📂 Excel ile toplu yükle</span>
-        <input type="file" id="sup-file" accept=".xlsx,.xls" style="display:none" onchange="handleSupFile(this)" />
+  el.innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+    <span class="fw7" style="font-size:15px">Tedarikçi Listesi</span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div class="upload-zone" style="padding:8px 14px;cursor:pointer" onclick="document.getElementById('sup-file').click()">
+        <span class="text-sm" style="color:var(--gray)">📂 Excel ile toplu yükle</span>
+        <input type="file" id="sup-file" accept=".xlsx,.xls" style="display:none" onchange="handleSupFile(this)">
       </div>
-      <button class="btn btn-primary btn-sm" onclick="showAddSupForm()">+ Yeni Ekle</button>
+      <button class="btn btn-primary btn-sm" onclick="showAddSup()">+ Yeni Ekle</button>
     </div>
   </div>
-  <div id="add-sup-form" class="hidden card card-pad mb16">
-    <div class="grid3 mb12">
-      <div><label class="lbl">Tedarikçi No *</label><input type="text" id="new-ted-no" placeholder="12345" /></div>
-      <div><label class="lbl">Ünvan</label><input type="text" id="new-ted-name" placeholder="Firma Adı" /></div>
-      <div><label class="lbl">Mail</label><input type="text" id="new-ted-mail" placeholder="info@firma.com" /></div>
+  <div id="add-sup" class="hidden card card-body mb12">
+    <div class="grid3 mb8">
+      <div><label class="lbl">No *</label><input type="text" id="new-no" placeholder="12345"></div>
+      <div><label class="lbl">Ünvan</label><input type="text" id="new-name" placeholder="Firma Adı"></div>
+      <div><label class="lbl">Mail</label><input type="text" id="new-mail" placeholder="info@firma.com"></div>
     </div>
-    <div class="flex gap8">
-      <button class="btn btn-primary btn-sm" onclick="addSupplierAdmin()">Kaydet</button>
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('add-sup-form').classList.add('hidden')">İptal</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary btn-sm" onclick="addSup()">Kaydet</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('add-sup').classList.add('hidden')">İptal</button>
     </div>
   </div>
-  <div class="search-wrap mb12">
+  <div class="search-box mb8" style="max-width:400px">
     <span class="search-icon">🔍</span>
-    <input type="text" placeholder="Tedarikçi ara..." oninput="filterSupAdmin(this.value)" />
+    <input type="text" placeholder="Tedarikçi ara..." oninput="filterSups(this.value)">
   </div>
-  <div class="card" id="sup-admin-list">
-    ${list.length === 0 ? '<div style="padding:32px;text-align:center;color:var(--lgray)">Tedarikçi listesi boş.</div>' :
-      list.map(s => `
-      <div class="sup-admin-row" data-search="${esc(s.tedNo+" "+s.name.toLowerCase())}"
-        style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap" id="sup-row-${esc(s.tedNo)}">
+  <div class="card" id="sup-tbl">
+    ${!list.length?'<div style="padding:32px;text-align:center;color:var(--lgray)">Liste boş.</div>':
+      list.map(s=>`
+      <div class="sup-admin-row" data-s="${esc((s.tedNo+" "+(s.name||"")).toLowerCase())}"
+        style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-top:1px solid var(--border)" id="sarow-${esc(s.tedNo)}">
         <div style="flex:1;min-width:0">
-          <div class="flex gap8"><span class="mono text-xs c-lgray">${esc(s.tedNo)}</span><span class="fw6 text-sm truncate">${esc(s.name)}</span></div>
-          <p class="text-xs mt4 truncate" style="color:${s.mail?"var(--gray)":"#dc2626"}">${esc(s.mail||"⚠ Mail adresi yok!")}</p>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="mono text-xs" style="color:var(--lgray)">${esc(s.tedNo)}</span>
+            <span class="fw6 text-sm truncate">${esc(s.name)}</span>
+          </div>
+          <div class="text-xs mt4 truncate" style="color:${s.mail?"var(--gray)":"var(--red)"}">${esc(s.mail||"⚠ Mail adresi eksik!")}</div>
         </div>
-        <div class="flex gap8">
-          <button class="btn btn-ghost btn-sm" onclick="editSupAdmin('${esc(s.tedNo)}','${esc(s.name)}','${esc(s.mail)}')">✏️ Düzenle</button>
-          <button class="btn btn-red btn-sm" onclick="delSupAdmin('${esc(s.tedNo)}')">🗑</button>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn btn-ghost btn-sm" onclick="editSup('${esc(s.tedNo)}','${esc(s.name)}','${esc(s.mail)}')">✏</button>
+          <button class="btn btn-red btn-sm" onclick="delSup('${esc(s.tedNo)}')">🗑</button>
         </div>
       </div>`).join("")}
   </div>`;
 
-  window.showAddSupForm = function() { document.getElementById("add-sup-form").classList.remove("hidden"); };
-
-  window.filterSupAdmin = function(q) {
-    q = q.toLowerCase();
-    document.querySelectorAll(".sup-admin-row").forEach(row => {
-      row.style.display = !q || row.dataset.search.includes(q) ? "" : "none";
-    });
+  window.showAddSup=function(){document.getElementById("add-sup").classList.remove("hidden");};
+  window.filterSups=function(q){
+    q=q.toLowerCase();
+    document.querySelectorAll(".sup-admin-row").forEach(r=>{r.style.display=!q||r.dataset.s.includes(q)?"":"none";});
   };
-
-  window.addSupplierAdmin = async function() {
-    const no = document.getElementById("new-ted-no").value.trim();
-    if (!no) { flash("Tedarikçi No zorunlu.", "err"); return; }
-    try {
-      await upsertSupplier(no, document.getElementById("new-ted-name").value.trim(), document.getElementById("new-ted-mail").value.trim());
-      flash("Tedarikçi eklendi.");
-      await renderSuppliersAdmin(document.getElementById("admin-content"));
-    } catch(e) { flash("Hata: "+e.message, "err"); }
+  window.addSup=async function(){
+    const no=document.getElementById("new-no").value.trim();
+    if(!no){flash("No zorunlu.","err");return;}
+    try{await upsertSupplier(no,document.getElementById("new-name").value.trim(),document.getElementById("new-mail").value.trim());flash("Eklendi.");await renderSuppliersAdmin(document.getElementById("admin-content"));}
+    catch(e){flash("Hata: "+e.message,"err");}
   };
-
-  window.editSupAdmin = function(no, name, mail) {
-    const row = document.getElementById("sup-row-"+no);
-    if (!row) return;
-    row.innerHTML = `
+  window.editSup=function(no,name,mail){
+    const row=document.getElementById("sarow-"+no);if(!row) return;
+    row.innerHTML=`
     <div style="flex:1;display:grid;grid-template-columns:1fr 2fr 3fr;gap:8px;min-width:0">
-      <input type="text" value="${esc(no)}" disabled />
-      <input type="text" id="edit-name-${esc(no)}" value="${esc(name)}" />
-      <input type="text" id="edit-mail-${esc(no)}" value="${esc(mail)}" />
+      <input type="text" value="${esc(no)}" disabled>
+      <input type="text" id="en-${esc(no)}" value="${esc(name)}">
+      <input type="text" id="em-${esc(no)}" value="${esc(mail)}">
     </div>
-    <div class="flex gap8">
-      <button class="btn btn-primary btn-sm" onclick="saveEditSup('${esc(no)}')">Kaydet</button>
-      <button class="btn btn-ghost btn-sm" onclick="renderSuppliersAdmin(document.getElementById('admin-content'))">İptal</button>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <button class="btn btn-primary btn-sm" onclick="saveSup('${esc(no)}')">✓</button>
+      <button class="btn btn-ghost btn-sm" onclick="renderSuppliersAdmin(document.getElementById('admin-content'))">✕</button>
     </div>`;
   };
-
-  window.saveEditSup = async function(no) {
-    try {
-      await upsertSupplier(no, document.getElementById("edit-name-"+no).value.trim(), document.getElementById("edit-mail-"+no).value.trim());
-      flash("Güncellendi.");
-      await renderSuppliersAdmin(document.getElementById("admin-content"));
-    } catch(e) { flash("Hata: "+e.message, "err"); }
+  window.saveSup=async function(no){
+    try{await upsertSupplier(no,document.getElementById("en-"+no).value.trim(),document.getElementById("em-"+no).value.trim());flash("Güncellendi.");await renderSuppliersAdmin(document.getElementById("admin-content"));}
+    catch(e){flash("Hata: "+e.message,"err");}
   };
-
-  window.delSupAdmin = async function(no) {
-    if (!confirm("Bu tedarikçiyi silmek istediğinize emin misiniz?")) return;
-    try {
-      await deleteSupplier(no);
-      flash("Silindi.");
-      await renderSuppliersAdmin(document.getElementById("admin-content"));
-    } catch(e) { flash("Hata: "+e.message, "err"); }
+  window.delSup=async function(no){
+    if(!confirm("Silinsin mi?")) return;
+    try{await deleteSupplier(no);flash("Silindi.");await renderSuppliersAdmin(document.getElementById("admin-content"));}
+    catch(e){flash("Hata: "+e.message,"err");}
   };
-
-  window.handleSupFile = async function(input) {
-    const file = input.files[0]; if (!file) return;
-    try {
-      const wb = await readExcel(file);
-      const parsed = parseSupplierExcel(wb);
-      for (const s of Object.values(parsed)) { await upsertSupplier(s.tedNo, s.name, s.mail); }
-      flash(Object.keys(parsed).length + " tedarikçi yüklendi.");
-      input.value = "";
+  window.handleSupFile=async function(input){
+    const file=input.files[0];if(!file) return;
+    try{
+      const wb=await readExcelFile(file);
+      const parsed=parseSupplierExcel(wb);
+      for(const s of Object.values(parsed)) await upsertSupplier(s.tedNo,s.name,s.mail);
+      flash(Object.keys(parsed).length+" tedarikçi yüklendi.");
+      input.value="";
       await renderSuppliersAdmin(document.getElementById("admin-content"));
-    } catch(e) { flash("Hata: "+e.message, "err"); }
+    }catch(e){flash("Hata: "+e.message,"err");}
   };
 }
 
-async function renderSettingsAdmin(el) {
-  const pwd = await getAyar("password") || "";
-  const hariçRaw = await getAyar("haric_tutulanlar") || "";
-  const hariçList = hariçRaw ? hariçRaw.split(",").map(s=>s.trim()).filter(Boolean) : [];
+// SETTINGS ADMIN
+async function renderSettingsAdmin(el){
+  const [pwd, haricRaw, orders] = await Promise.all([getAyar("password"), getAyar("haric_tutulanlar"), getOrders()]);
+  const haric=(haricRaw||"").split(",").map(s=>s.trim()).filter(Boolean);
+  const teds=new Map();
+  orders.forEach(o=>{if(!teds.has(o.tedNo))teds.set(o.tedNo,o.tedUnvan);});
 
-  // Mevcut siparişlerdeki tüm tedarikçileri getir
-  const orders = await getOrders();
-  const tedMap = {};
-  orders.forEach(o => { if (!tedMap[o.tedNo]) tedMap[o.tedNo] = o.tedUnvan; });
-  const tedList = Object.entries(tedMap).sort((a,b) => a[1].localeCompare(b[1],"tr"));
-
-  el.innerHTML = `
-  <div class="section-hdr"><span class="section-title">Ayarlar</span></div>
-
-  <div class="card card-pad mb16">
-    <label class="lbl">Tedarikçi Erişim Şifresi</label>
-    <p class="text-xs c-gray mb8">Tedarikçiler forma girmeden önce bu şifreyi sorar. Mail içinde otomatik paylaşılır.</p>
-    <div class="flex gap8">
-      <input type="text" id="pwd-val" value="${esc(pwd)}" placeholder="Örn: cimtas2026" style="max-width:300px" />
+  el.innerHTML=`
+  <div class="card card-body mb16">
+    <div class="fw7 mb4" style="font-size:15px">Erişim Şifresi</div>
+    <div class="text-xs mb8" style="color:var(--lgray)">Tedarikçiler forma girmeden önce bu şifreyi sorar. Mail içinde otomatik paylaşılır.</div>
+    <div style="display:flex;gap:8px;max-width:400px">
+      <input type="text" id="pwd-set" value="${esc(pwd||"")}" placeholder="Örn: cimtas2026">
       <button class="btn btn-primary btn-sm" onclick="savePwd()">Kaydet</button>
     </div>
   </div>
 
-  <div class="card card-pad">
-    <label class="lbl">Mail Gönderilmeyecek / Hatırlatmaya Dahil Edilmeyecek Tedarikçiler</label>
-    <p class="text-xs c-gray mb12">İşaretlenen tedarikçiler dashboard'da görünür ama mail butonu gösterilmez, toplu hatırlatmaya dahil edilmez. Her hafta seçimlerin korunur.</p>
-    <div class="search-wrap mb12">
+  <div class="card card-body">
+    <div class="fw7 mb4" style="font-size:15px">Mail Gönderilmeyecek Tedarikçiler</div>
+    <div class="text-xs mb12" style="color:var(--lgray)">İşaretlenenler dashboard'da görünmez, mail listesine dahil edilmez. Seçim kalıcıdır.</div>
+    <div class="search-box mb8" style="max-width:400px">
       <span class="search-icon">🔍</span>
-      <input type="text" placeholder="Tedarikçi ara..." oninput="filterHaricList(this.value)" />
+      <input type="text" placeholder="Ara..." oninput="filterHaric(this.value)">
     </div>
-    <div style="max-height:400px;overflow-y:auto;border:1px solid var(--border);border-radius:8px" id="haric-list">
-      ${tedList.length === 0 ? '<div style="padding:16px;text-align:center;color:var(--lgray)">Önce sipariş yükleyin.</div>' :
-        tedList.map(([no, unvan]) => `
-        <label class="haric-item" data-search="${esc((no+" "+unvan).toLowerCase())}"
-          style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer"
-          onmouseenter="this.style.background='#fffaf8'" onmouseleave="this.style.background=''">
-          <input type="checkbox" id="haric-${esc(no)}" ${hariçList.includes(no) ? "checked" : ""} />
-          <div>
-            <span class="text-sm fw6">${esc(unvan)}</span>
-            <span class="mono text-xs c-lgray" style="margin-left:8px">${esc(no)}</span>
-          </div>
-        </label>`).join("")}
+    <div style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:8px" id="haric-list">
+      ${Array.from(teds.entries()).sort((a,b)=>a[1].localeCompare(b[1],"tr")).map(([no,unvan])=>`
+      <label class="haric-item" data-s="${esc((no+" "+unvan).toLowerCase())}"
+        style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border)"
+        onmouseenter="this.style.background='#fffaf8'" onmouseleave="this.style.background=''">
+        <input type="checkbox" id="h-${esc(no)}" ${haric.includes(no)?"checked":""}>
+        <span class="text-sm fw6">${esc(unvan)}</span>
+        <span class="mono text-xs" style="color:var(--lgray)">${esc(no)}</span>
+      </label>`).join("")}
     </div>
-    <div class="flex gap8 mt12">
+    <div style="display:flex;align-items:center;gap:12px;margin-top:10px">
       <button class="btn btn-primary btn-sm" onclick="saveHaric()">💾 Kaydet</button>
-      <span class="text-xs c-lgray" style="align-self:center">${hariçList.length} tedarikçi hariç tutulmuş</span>
+      <span class="text-xs" style="color:var(--lgray)" id="haric-count">${haric.length} tedarikçi hariç</span>
     </div>
   </div>`;
 
-  window.savePwd = async function() {
-    const val = document.getElementById("pwd-val").value.trim();
-    await setAyar("password", val);
-    flash(val ? "Şifre kaydedildi." : "Şifre koruması kaldırıldı.");
+  window.savePwd=async function(){await setAyar("password",document.getElementById("pwd-set").value.trim());flash("Şifre kaydedildi.");};
+  window.filterHaric=function(q){
+    q=q.toLowerCase();
+    document.querySelectorAll(".haric-item").forEach(i=>{i.style.display=!q||i.dataset.s.includes(q)?"":"none";});
   };
-
-  window.filterHaricList = function(q) {
-    q = q.toLowerCase();
-    document.querySelectorAll(".haric-item").forEach(item => {
-      item.style.display = !q || item.dataset.search.includes(q) ? "" : "none";
-    });
-  };
-
-  window.saveHaric = async function() {
-    const secili = Array.from(document.querySelectorAll("[id^='haric-']:checked"))
-      .map(el => el.id.replace("haric-",""));
-    await setAyar("haric_tutulanlar", secili.join(","));
-    flash(secili.length + " tedarikçi hariç tutuldu.");
-    await renderSettingsAdmin(document.getElementById("admin-content"));
+  window.saveHaric=async function(){
+    const sel=Array.from(document.querySelectorAll("[id^='h-']:checked")).map(el=>el.id.replace("h-",""));
+    await setAyar("haric_tutulanlar",sel.join(","));
+    const cnt=document.getElementById("haric-count");
+    if(cnt) cnt.textContent=sel.length+" tedarikçi hariç";
+    flash(sel.length+" tedarikçi hariç tutuldu.");
   };
 }
 </script>
 
-<script>
-document.addEventListener("DOMContentLoaded", init);
-</script>
+<script>document.addEventListener("DOMContentLoaded", init);</script>
 </body>
 </html>
