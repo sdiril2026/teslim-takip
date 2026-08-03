@@ -189,11 +189,14 @@ async function setAcil(id, acil) { await sbPatch("siparisler?id=eq."+encodeURICo
 async function getResponses() {
   const rows = await sbGet("yanıtlar?select=*");
   const m={};
-  (rows||[]).forEach(r=>{m[r.siparis_id]={yeniTarih:r.yeni_tarih, not:r.not_, savedAt:r.saved_at};});
+  (rows||[]).forEach(r=>{m[r.siparis_id]={yeniTarih:r.yeni_tarih, not:r.not_, savedAt:r.saved_at, adminNot:r.admin_not||""};});
   return m;
 }
 async function saveResponse(id, yeniTarih, not_) {
   await sbUpsert("yanıtlar", {id, siparis_id:id, yeni_tarih:yeniTarih, not_:not_, saved_at:new Date().toISOString()});
+}
+async function saveAdminNot(id, adminNot) {
+  await sbUpsert("yanıtlar", {id, siparis_id:id, admin_not:adminNot});
 }
 
 async function getSuppliers() {
@@ -483,6 +486,9 @@ async function showSupplierView(supplierId){
         <div style="font-size:10px;color:#94A3B8;margin-top:1px">GG/AA/YYYY</div>
       </td>
       <td><input type="text" id="sup-not-${o.id}" value="${esc(r.not||"")}" placeholder="Not..." style="min-width:80px;font-size:12px"></td>
+      <td>
+        ${r.adminNot?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:4px 8px;font-size:11px;color:#92400e;min-width:100px">💬 ${esc(r.adminNot)}</div>`:'<span style="color:#CBD5E1;font-size:11px">—</span>'}
+      </td>
       <td><button class="btn btn-navy btn-sm" id="sup-btn-${o.id}" onclick="supSaveRow('${esc(o.id)}')" ${!r.yeniTarih?"disabled":""}>
         ${isDone?"Güncelle":"Kaydet"}
       </button></td>
@@ -492,7 +498,7 @@ async function showSupplierView(supplierId){
   const tblHeader=`<thead><tr>
     <th style="width:30px"><input type="checkbox" onchange="supToggleAll(this.checked)"></th>
     <th></th><th>Talep</th><th>Malz. Kodu</th><th>Malzeme Tanımı</th>
-    <th>Bağlanmamış</th><th>Söz Verilen</th><th>Yeni Tarih</th><th>Not</th><th></th>
+    <th>Bağlanmamış</th><th>Söz Verilen</th><th>Yeni Tarih</th><th>Not</th><th>Cimtaş Notu</th><th></th>
   </tr></thead>`;
 
   document.body.innerHTML=`
@@ -725,7 +731,7 @@ function renderDash(){
         <div class="tbl-wrap">
           <table>
             <thead><tr>
-              <th>Talep</th><th>Malz. Kodu</th><th>Malzeme</th><th>Bağlanmamış</th><th>Söz Verilen</th><th>Yeni Tarih</th><th>Not</th><th>Durum</th>
+              <th>Talep</th><th>Malz. Kodu</th><th>Malzeme</th><th>Bağlanmamış</th><th>Söz Verilen</th><th>Yeni Tarih</th><th>Not</th><th>Cevap</th><th>Durum</th>
             </tr></thead>
             <tbody>
               ${s.orders.map(o=>{
@@ -742,6 +748,10 @@ function renderDash(){
                   <td>${fmtDate(o.sozTarih)}</td>
                   <td class="fw6">${r.yeniTarih?fmtDate(r.yeniTarih):"—"}</td>
                   <td style="max-width:100px;color:var(--gray)">${esc(r.not||"—")}</td>
+                  <td>
+                    ${r.adminNot?`<span style="font-size:11px;color:#92400e">💬 ${esc(r.adminNot)}</span> `:""}
+                    <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:3px 7px" onclick="yazAdminNot('${esc(o.id)}','${esc(r.adminNot||"")}')">✏ Cevap</button>
+                  </td>
                   <td>${d}</td>
                 </tr>`;
               }).join("")}
@@ -805,6 +815,35 @@ window.topluMailSec=function(){
     setTimeout(next,1800);
   }
   next();
+};
+
+window.yazAdminNot=function(id, mevcutNot){
+  showModal(`
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>💬 Cevap / Not Yaz</h3>
+      <button onclick="closeModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#94A3B8;line-height:1">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="text-xs mb8" style="color:var(--lgray)">Tedarikçi bir sonraki form açılışında bu notu görecek.</p>
+      <textarea id="admin-not-input" style="height:100px;resize:vertical" placeholder="Örn: Lütfen en geç bu hafta içinde teslim tarihini netleştiriniz.">${esc(mevcutNot)}</textarea>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary btn-sm" onclick="saveAdminNotAndClose('${esc(id)}')">💾 Kaydet</button>
+    </div>
+  </div>`);
+};
+
+window.saveAdminNotAndClose=async function(id){
+  const val=document.getElementById("admin-not-input").value.trim();
+  try{
+    await saveAdminNot(id, val);
+    closeModal();
+    flash("Not kaydedildi.");
+    await loadDashData();
+    renderDash();
+  }catch(e){flash("Hata: "+e.message,"err");}
 };
 
 window.exportAll=function(){
