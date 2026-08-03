@@ -413,13 +413,22 @@ function exportExcel(orders, responses) {
   const data = [headers, ...orders.map(o => {
     const r = responses[o.id] || {};
     const until = daysUntil(o.sozTarih);
-    const durum = r.savedAt ? "Girildi" : until !== null && until < 0 ? "Gecikmiş" : "Bekliyor";
+    const durum = (until !== null && until < 0) ? (r.savedAt ? "Gecikmiş-Teslim Edilmedi" : "Gecikmiş") : r.savedAt ? "Girildi" : "Bekliyor";
+    // Tarihleri ' öneki ile metin olarak koy, Excel otomatik dönüştürmesin
     return [o.talepTipi, o.talepNo, o.strNo, o.malzKodu, o.malzTanim, o.origQty, o.bagMiktar,
             fmtDate(o.sozTarih), r.yeniTarih ? fmtDate(r.yeniTarih) : "", r.not||"",
             o.tedNo, o.tedUnvan, durum];
   })];
   const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(data);
+  const ws = XLSX.utils.aoa_to_sheet(data, { raw: false });
+  // Tarih sütunlarını (H ve I) metin formatında işaretle
+  const range = XLSX.utils.decode_range(ws["!ref"]);
+  for (let row = 1; row <= range.e.r; row++) {
+    ["H","I"].forEach(col => {
+      const addr = col + (row + 1);
+      if (ws[addr]) { ws[addr].t = "s"; }
+    });
+  }
   ws["!cols"] = [8,10,8,14,30,10,14,14,14,20,10,30,10].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb, ws, "Teslim Takip");
   XLSX.writeFile(wb, "Teslim_Takip_"+new Date().toISOString().slice(0,10)+".xlsx");
@@ -515,8 +524,9 @@ async function showSupplierView(supplierId) {
   function orderRowHTML(o, idx) {
     const r = responses[o.id] || {};
     const isSubmitted = !!r.savedAt;
-    const until = daysUntil(o.sozTarih);
-    const isLate = until !== null && until < 0 && !r.yeniTarih;
+    const efTarih = r.yeniTarih || o.sozTarih;
+    const until = daysUntil(efTarih);
+    const isLate = until !== null && until < 0;
     return `
     <tr class="${isSubmitted ? "" : isLate ? "late" : ""}" id="row-${o.id}">
       <td><input type="checkbox" id="chk-sup-${o.id}" /></td>
@@ -532,7 +542,10 @@ async function showSupplierView(supplierId) {
       <td style="max-width:220px"><div class="truncate" title="${esc(o.malzTanim)}">${esc(o.malzTanim)}</div></td>
       <td class="text-right fw6">${esc(o.bagMiktar)}</td>
       <td>${fmtDate(o.sozTarih)}</td>
-      <td><input type="date" id="date-${o.id}" value="${esc(r.yeniTarih||"")}" style="min-width:130px" onchange="onDateChange('${esc(o.id)}')" /></td>
+      <td>
+        <input type="date" id="date-${o.id}" value="${esc(r.yeniTarih||"")}" lang="tr" style="min-width:130px" onchange="onDateChange('${esc(o.id)}')" />
+        <div style="font-size:10px;color:#94A3B8;margin-top:2px">GG/AA/YYYY</div>
+      </td>
       <td><input type="text" id="not-${o.id}" value="${esc(r.not||"")}" placeholder="Not..." style="min-width:100px" /></td>
       <td>
         <button class="btn btn-navy btn-sm" id="savebtn-${o.id}" onclick="saveRowSup('${esc(o.id)}')" ${!r.yeniTarih ? "disabled" : ""}>
@@ -720,7 +733,7 @@ function supplierStats() {
   });
   const daysSinceUpload = daysDiff(_dashUploadedAt);
   return Array.from(map.values()).map(s => {
-    const submitted = s.orders.filter(o => _dashResponses[o.id] && _dashResponses[o.id].savedAt).length;
+    const submitted = s.orders.filter(o => { const r = _dashResponses[o.id]; if (!r || !r.savedAt) return false; const t = r.yeniTarih || o.sozTarih; return daysUntil(t) >= 0; }).length;
     const total = s.orders.length;
     let status = "bekliyor";
     if (submitted === total && total > 0) status = "tamamlandi";
@@ -730,7 +743,7 @@ function supplierStats() {
       const r = _dashResponses[o.id] || {};
       const tarih = r.yeniTarih || o.sozTarih;
       const until = daysUntil(tarih);
-      return (!r.savedAt && daysSinceUpload >= 2) || (until !== null && until < 0 && !r.savedAt) || (until === 1 && !r.savedAt);
+      const efT = r.yeniTarih || o.sozTarih; const unt = daysUntil(efT); return (!r.savedAt && daysSinceUpload >= 2) || (unt !== null && unt < 0) || (unt === 1);
     });
     const isHaric = _dashHaric.has(s.tedNo);
     return Object.assign({}, s, { submitted, total, status, daysSinceUpload, hatirlatmaGereken, isHaric });
@@ -938,7 +951,7 @@ function renderOzet(el) {
                 ${s.orders.map(o => {
                   const r = _dashResponses[o.id] || {};
                   const until = daysUntil(r.yeniTarih || o.sozTarih);
-                  const isLate = until !== null && until < 0 && !r.savedAt;
+                  const isLate = until !== null && until < 0;
                   const durum = r.savedAt ? '<span class="badge b-green" style="font-size:10px">✓</span>' : isLate ? '<span class="badge b-red" style="font-size:10px">Geç</span>' : '<span class="badge b-orange" style="font-size:10px">Bekliyor</span>';
                   return `<tr class="${isLate?"late":""}">
                     <td><input type="checkbox" class="ozet-row-chk" data-ted="${esc(s.tedNo)}" data-id="${esc(o.id)}" checked /></td>
@@ -1040,9 +1053,10 @@ function renderTablo(el) {
       <tbody id="tablo-body">
         ${visibleOrders.map(o => {
           const r = _dashResponses[o.id] || {};
-          const until = daysUntil(r.yeniTarih || o.sozTarih);
-          const isLate = until !== null && until < 0 && !r.savedAt;
-          const durum = r.savedAt ? '<span class="badge b-green">✓ Girildi</span>' : isLate ? '<span class="badge b-red">Gecikmiş</span>' : '<span class="badge b-orange">Bekliyor</span>';
+          const efTarih2 = r.yeniTarih || o.sozTarih;
+          const until = daysUntil(efTarih2);
+          const isLate = until !== null && until < 0;
+          const durum = isLate && r.savedAt ? '<span class="badge b-red">Gecikmiş (Teslim Edilmedi)</span>' : isLate ? '<span class="badge b-red">Gecikmiş</span>' : r.savedAt ? '<span class="badge b-green">✓ Girildi</span>' : '<span class="badge b-orange">Bekliyor</span>';
           return `<tr class="${isLate?"late":""}" data-search="${esc((o.tedUnvan+" "+o.malzKodu+" "+o.malzTanim).toLowerCase())}">
             <td class="truncate" style="max-width:160px">${esc(o.tedUnvan)}</td>
             <td class="mono">${esc(o.talepTipi)} ${esc(o.talepNo)}/${esc(o.strNo)}</td>
@@ -1184,7 +1198,7 @@ function renderAcilDash(el) {
         ${acilList.map(o => {
           const r = _dashResponses[o.id] || {};
           const until = daysUntil(r.yeniTarih || o.sozTarih);
-          const isLate = until !== null && until < 0 && !r.savedAt;
+          const isLate = until !== null && until < 0;
           const durum = r.savedAt ? '<span class="badge b-green">✓</span>' : isLate ? '<span class="badge b-red">Geç</span>' : '<span class="badge b-acil">Bekliyor</span>';
           return `<tr class="${isLate?"late":""}">
             <td><input type="checkbox" class="hiz-chk" id="hiz-chk-${o.id}" data-ted="${esc(o.tedNo)}" /></td>
