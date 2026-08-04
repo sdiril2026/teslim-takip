@@ -61,6 +61,8 @@ tr:hover td{background:#FAFBFF}
 tr.late td{background:#FFF5F5}
 tr.late:hover td{background:#FEE2E2}
 tr.done td{background:#F0FDF4}
+tr.gizli td{opacity:.45;text-decoration:line-through}
+tr.gizli:hover td{opacity:.6}
 .mono{font-family:monospace;font-size:11px}
 
 /* BADGES */
@@ -170,7 +172,7 @@ async function getOrders() {
     id:r.id, talepTipi:r.talep_tipi, talepNo:r.talep_no, strNo:r.str_no,
     malzKodu:r.malz_kodu, malzTanim:r.malz_tanim, origQty:r.orig_qty,
     bagMiktar:r.bag_miktar, sozTarih:r.soz_tarih, tedNo:r.ted_no,
-    tedUnvan:r.ted_unvan, acil:r.acil
+    tedUnvan:r.ted_unvan, acil:r.acil, gizli:r.gizli||false
   }));
 }
 async function uploadOrders(rows) {
@@ -185,6 +187,7 @@ async function uploadOrders(rows) {
   await setAyar("uploadedAt", new Date().toISOString().slice(0,10));
 }
 async function setAcil(id, acil) { await sbPatch("siparisler?id=eq."+encodeURIComponent(id), {acil}); }
+async function setGizli(id, gizli) { await sbPatch("siparisler?id=eq."+encodeURIComponent(id), {gizli}); }
 
 async function getResponses() {
   const rows = await sbGet("yanıtlar?select=*");
@@ -246,6 +249,11 @@ function fmtDate(iso){
   if(!iso) return "—";
   const p=iso.split("-");
   return p.length===3?p[2]+"."+p[1]+"."+p[0]:iso;
+}
+function fmtDateTime(iso){
+  if(!iso) return "—";
+  const d=new Date(iso);
+  return d.toLocaleDateString("tr-TR",{day:"2-digit",month:"2-digit",year:"numeric"})+" "+d.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
 }
 function daysUntil(iso){
   if(!iso) return null;
@@ -457,7 +465,7 @@ async function checkPwd(id){
 <script>
 async function showSupplierView(supplierId){
   const [allOrders, responses] = await Promise.all([getOrders(), getResponses()]);
-  const orders = allOrders.filter(o=>o.tedNo===supplierId);
+  const orders = allOrders.filter(o=>o.tedNo===supplierId && !o.gizli);
   const tedAdi = (orders[0]&&orders[0].tedUnvan)||supplierId;
   const acil = orders.filter(o=>o.acil);
   const normal = orders.filter(o=>!o.acil);
@@ -482,8 +490,7 @@ async function showSupplierView(supplierId){
       <td class="fw6">${esc(o.bagMiktar)}</td>
       <td>${fmtDate(o.sozTarih)}</td>
       <td>
-        <input type="date" id="sup-date-${o.id}" value="${esc(r.yeniTarih||"")}" style="min-width:120px" onchange="supDateChange('${esc(o.id)}')">
-        <div style="font-size:10px;color:#94A3B8;margin-top:1px">GG/AA/YYYY</div>
+        <input type="text" id="sup-date-${o.id}" value="${esc(r.yeniTarih ? fmtDate(r.yeniTarih) : "")}" placeholder="GG.AA.YYYY" maxlength="10" style="min-width:110px;font-family:monospace;letter-spacing:1px" oninput="supDateInput(this,'${esc(o.id)}')" onblur="supDateChange('${esc(o.id)}')">
       </td>
       <td><input type="text" id="sup-not-${o.id}" value="${esc(r.not||"")}" placeholder="Not..." style="min-width:80px;font-size:12px"></td>
       <td>
@@ -529,10 +536,32 @@ async function showSupplierView(supplierId){
   window._supOrders=orders;
   window._supResponses=responses;
 
+  // GG.AA.YYYY → YYYY-MM-DD
+  window.parseDDMMYYYY=function(s){
+    const p=s.trim().split(".");
+    if(p.length===3 && p[0].length===2 && p[1].length===2 && p[2].length===4){
+      return p[2]+"-"+p[1]+"-"+p[0];
+    }
+    return null;
+  };
+  // Otomatik nokta ekle: 2 rakam → nokta, 4 rakam → nokta
+  window.supDateInput=function(el, id){
+    let v=el.value.replace(/[^0-9.]/g,"");
+    // Sadece rakam ve noktaya izin ver, otomatik nokta
+    let digits=v.replace(/\./g,"");
+    let formatted="";
+    for(let i=0;i<digits.length&&i<8;i++){
+      if(i===2||i===4) formatted+=".";
+      formatted+=digits[i];
+    }
+    el.value=formatted;
+    const btn=document.getElementById("sup-btn-"+id);
+    if(btn) btn.disabled=!window.parseDDMMYYYY(formatted);
+  };
   window.supDateChange=function(id){
     const v=document.getElementById("sup-date-"+id);
     const btn=document.getElementById("sup-btn-"+id);
-    if(btn) btn.disabled=!v||!v.value;
+    if(btn) btn.disabled=!v||!window.parseDDMMYYYY(v.value||"");
   };
   window.supToggleAll=function(checked){orders.forEach(o=>{const el=document.getElementById("sup-chk-"+o.id);if(el)el.checked=checked;});};
   window.supSelectAll=function(){orders.forEach(o=>{const el=document.getElementById("sup-chk-"+o.id);if(el)el.checked=true;});};
@@ -540,11 +569,12 @@ async function showSupplierView(supplierId){
   window.supSaveRow=async function(id){
     const dateEl=document.getElementById("sup-date-"+id);
     const notEl=document.getElementById("sup-not-"+id);
-    if(!dateEl||!dateEl.value) return;
+    const isoDate=dateEl ? window.parseDDMMYYYY(dateEl.value||"") : null;
+    if(!isoDate){flash("Geçerli bir tarih girin (GG.AA.YYYY).","warn");return;}
     const btn=document.getElementById("sup-btn-"+id);
     if(btn){btn.disabled=true;btn.textContent="...";}
     try{
-      await saveResponse(id, dateEl.value, notEl?notEl.value:"");
+      await saveResponse(id, isoDate, notEl?notEl.value:"");
       if(btn){btn.textContent="✓";btn.style.background="var(--green)";}
       const row=document.getElementById("sup-row-"+id);
       if(row){row.classList.remove("late");row.classList.add("done");}
@@ -558,9 +588,10 @@ async function showSupplierView(supplierId){
     let saved=0;
     for(const o of sel){
       const dateEl=document.getElementById("sup-date-"+o.id);
-      if(dateEl&&dateEl.value){
+      const isoDate=dateEl ? window.parseDDMMYYYY(dateEl.value||"") : null;
+      if(isoDate){
         const notEl=document.getElementById("sup-not-"+o.id);
-        await saveResponse(o.id, dateEl.value, notEl?notEl.value:"");
+        await saveResponse(o.id, isoDate, notEl?notEl.value:"");
         const btn=document.getElementById("sup-btn-"+o.id);
         if(btn){btn.textContent="✓";btn.style.background="var(--green)";}
         const row=document.getElementById("sup-row-"+o.id);
@@ -568,7 +599,8 @@ async function showSupplierView(supplierId){
         saved++;
       }
     }
-    flash(saved+" satır kaydedildi.");
+    if(saved) flash(saved+" satır kaydedildi.");
+    else flash("Tarih girilmiş satır bulunamadı.","warn");
   };
 }
 </script>
@@ -731,7 +763,7 @@ function renderDash(){
         <div class="tbl-wrap">
           <table>
             <thead><tr>
-              <th>Talep</th><th>Malz. Kodu</th><th>Malzeme</th><th>Bağlanmamış</th><th>Söz Verilen</th><th>Yeni Tarih</th><th>Not</th><th>Cevap</th><th>Durum</th>
+              <th>Talep</th><th>Malz. Kodu</th><th>Malzeme</th><th>Bağlanmamış</th><th>Söz Verilen</th><th>Yeni Tarih</th><th>Giriş Tarihi</th><th>Not</th><th>Cevap</th><th>Gizle</th><th>Durum</th>
             </tr></thead>
             <tbody>
               ${s.orders.map(o=>{
@@ -740,17 +772,23 @@ function renderDash(){
                 const tarih=r.yeniTarih||o.sozTarih;
                 const u=daysUntil(tarih);
                 const d=st2==="gecikti"?'<span class="badge b-red">Gecikmiş</span>':st2==="girildi"?'<span class="badge b-green">✓ Girildi</span>':'<span class="badge b-amber">Bekliyor</span>';
-                return `<tr class="${st2==="gecikti"?"late":st2==="girildi"?"done":""}">
+                return `<tr class="${st2==="gecikti"?"late":st2==="girildi"?"done":""}${o.gizli?" gizli":""}">
                   <td class="mono">${esc(o.talepTipi)} ${esc(o.talepNo)}/${esc(o.strNo)}</td>
                   <td class="mono">${esc(o.malzKodu)}</td>
                   <td class="truncate" style="max-width:180px">${esc(o.malzTanim)}</td>
                   <td>${esc(o.bagMiktar)}</td>
                   <td>${fmtDate(o.sozTarih)}</td>
                   <td class="fw6">${r.yeniTarih?fmtDate(r.yeniTarih):"—"}</td>
+                  <td class="text-xs" style="color:var(--lgray)">${r.savedAt ? fmtDateTime(r.savedAt) : "—"}</td>
                   <td style="max-width:100px;color:var(--gray)">${esc(r.not||"—")}</td>
                   <td>
                     ${r.adminNot?`<span style="font-size:11px;color:#92400e">💬 ${esc(r.adminNot)}</span> `:""}
                     <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:3px 7px" onclick="yazAdminNot('${esc(o.id)}','${esc(r.adminNot||"")}')">✏ Cevap</button>
+                  </td>
+                  <td>
+                    <button class="btn btn-sm ${o.gizli?"btn-green":"btn-ghost"}" style="font-size:10px;padding:3px 7px" onclick="toggleGizli('${esc(o.id)}',${o.gizli})">
+                      ${o.gizli?"👁 Göster":"🚫 Gizle"}
+                    </button>
                   </td>
                   <td>${d}</td>
                 </tr>`;
@@ -817,6 +855,15 @@ window.topluMailSec=function(){
   next();
 };
 
+window.toggleGizli=async function(id, suanGizli){
+  try{
+    await setGizli(id, !suanGizli);
+    flash(suanGizli ? "Kalem tekrar gösterilecek." : "Kalem tedarikçiye gizlendi.");
+    await loadDashData();
+    renderDash();
+  }catch(e){flash("Hata: "+e.message,"err");}
+};
+
 window.yazAdminNot=function(id, mevcutNot){
   showModal(`
   <div class="modal">
@@ -847,12 +894,13 @@ window.saveAdminNotAndClose=async function(id){
 };
 
 window.exportAll=function(){
-  const headers=["Talep Tipi","Talep No","Str No","JDE Malz. Kodu","Malzeme Tanımı","Orig. Qty","Bağlanmamış","Söz Verilen","Yeni Tarih","Not","Tedarikçi No","Tedarikçi Ünvan","Durum"];
+  const headers=["Talep Tipi","Talep No","Str No","JDE Malz. Kodu","Malzeme Tanımı","Orig. Qty","Bağlanmamış","Söz Verilen","Yeni Tarih","Giriş Tarihi","Not","Tedarikçi No","Tedarikçi Ünvan","Durum"];
   const data=[headers,..._D.orders.map(o=>{
     const r=_D.resp[o.id]||{};
     const st=orderStatus(o,r);
     const d=st==="gecikti"?"Gecikmiş":st==="girildi"?"Girildi":"Bekliyor";
-    return[o.talepTipi,o.talepNo,o.strNo,o.malzKodu,o.malzTanim,o.origQty,o.bagMiktar,fmtDate(o.sozTarih),r.yeniTarih?fmtDate(r.yeniTarih):"",r.not||"",o.tedNo,o.tedUnvan,d];
+    const giris=r.savedAt?fmtDateTime(r.savedAt):"";
+    return[o.talepTipi,o.talepNo,o.strNo,o.malzKodu,o.malzTanim,o.origQty,o.bagMiktar,fmtDate(o.sozTarih),r.yeniTarih?fmtDate(r.yeniTarih):"",giris,r.not||"",o.tedNo,o.tedUnvan,d];
   })];
   const wb=XLSX.utils.book_new();
   const ws=XLSX.utils.aoa_to_sheet(data,{raw:false});
