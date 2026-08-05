@@ -362,28 +362,70 @@ function supplierStatus(orders, resp){
   return "bekliyor";
 }
 
-function buildMail(tedUnvan, tip, link, pwd, hatNo, kalemler){
+function buildMail(tedUnvan, tip, link, tedNo, hatNo, kalemler){
   const n=hatNo||1;
+  const sifre=tedNo||"";
+  const linkBlok="Form Linki: "+link+(sifre?"\nErişim Şifresi: "+sifre:"");
+  const imza="\n\nSaygılarımızla,\nÇimtaş Hassas İşleme Satın Alma";
   let subj, body;
+
   if(tip==="ilk"){
-    subj="Teslim Tarihi Guncelleme Talebi - "+tedUnvan;
-    body="Sayin "+tedUnvan+" Yetkilileri,\n\nAcik siparis kalemleriniz icin guncel teslim tarihlerini asagidaki linkten girmenizi rica ederiz.\n\nForm Linki: "+link+(pwd?"\nSifre: "+pwd:"")+"\n\nGuncellemelerin 2 is gunu icinde tamamlanmasini bekliyoruz.\n\nSaygilarimizla,\nCimtas Hassas Isleme Satin Alma";
+    subj="Açık Sipariş - Teslim Tarihi Güncelleme Talebi - "+tedUnvan;
+    body="Sayın "+tedUnvan+" Yetkilileri,\n\n"
+      +"Açık sipariş kalemlerinizde yer alan teslim tarihlerinin güncellenmesini talep etmekteyiz. "
+      +"Güncel bilgileri aşağıdaki link üzerinden sisteme girmenizi rica ederiz.\n\n"
+      +linkBlok+"\n\n"
+      +"Güncellemelerin 2 iş günü içinde tamamlanmasını önemle rica ederiz."
+      +imza;
+
   } else if(tip==="hatirlatma"){
-    if(n<=2){
-      subj="HATIRLATMA: Teslim Tarihi Guncelleme Bekleniyor - "+tedUnvan;
-      body="Sayin "+tedUnvan+" Yetkilileri,\n\nDaha once ilettigimiz teslim tarihi guncelleme talebine henuz donus yapilmamistir.\n\nForm Linki: "+link+(pwd?"\nSifre: "+pwd:"")+"\n\nGucellemelerin bugün tamamlanmasi gerekmektedir.\n\nSaygilarimizla,\nCimtas Hassas Isleme Satin Alma";
+    if(n===1){
+      subj="Hatırlatma: Teslim Tarihi Güncelleme Bekleniyor - "+tedUnvan;
+      body="Sayın "+tedUnvan+" Yetkilileri,\n\n"
+        +"Daha önce ilettiğimiz teslim tarihi güncelleme talebine henüz dönüş yapılmamıştır. "
+        +"Açık sipariş kalemlerinizi aşağıdaki linkten bugün güncellemenizi talep ediyoruz.\n\n"
+        +linkBlok
+        +imza;
+    } else if(n===2){
+      subj="2. Hatırlatma: Teslim Tarihi Güncelleme - "+tedUnvan;
+      body="Sayın "+tedUnvan+" Yetkilileri,\n\n"
+        +"Teslim tarihi güncelleme talebimizi ikinci kez iletiyoruz. "
+        +"Tedarik süreçlerimizin aksamaması için güncellemelerin bugün mesai bitimine kadar tamamlanması gerekmektedir.\n\n"
+        +linkBlok+"\n\n"
+        +"Konuya ilişkin bir sorunuz varsa bizimle iletişime geçebilirsiniz."
+        +imza;
     } else {
-      subj="ACİL: "+n+". Hatirlamma - Teslim Tarihi Guncelleme - "+tedUnvan;
-      body="Sayin "+tedUnvan+" Yetkilileri,\n\nTeslim tarihi guncelleme talebimize "+n+" kez donus bekliyoruz. Bu durum tedarikci performans degerlendirmemizi olumsuz etkileyecektir.\n\nLutfen BUGUN asagidaki linkten guncelleyiniz.\n\nForm Linki: "+link+(pwd?"\nSifre: "+pwd:"")+"\n\nSaygilarimizla,\nCimtas Hassas Isleme Satin Alma";
+      subj="ACİL – "+n+". Hatırlatma: Teslim Tarihi Güncelleme – "+tedUnvan;
+      body="Sayın "+tedUnvan+" Yetkilileri,\n\n"
+        +"Teslim tarihi güncelleme talebimize "+n+". kez dönüş bekliyoruz. "
+        +"Bu durumun tedarikçi performans değerlendirmemizi olumsuz etkileyeceğini ve ilerleyen süreçte yeni sipariş kararlarımızı etkileyebileceğini hatırlatmak isteriz.\n\n"
+        +"Lütfen açık sipariş kalemlerinizi BUGÜN aşağıdaki linkten güncelleyiniz.\n\n"
+        +linkBlok+"\n\n"
+        +"Acil olarak dönüş bekliyoruz."
+        +imza;
     }
+
   } else if(tip==="gecikme"){
-    const liste=(kalemler||[]).map(o=>"- ["+o.malzKodu+"] "+o.malzTanim+" (Soz Verilen: "+fmtDate(o.sozTarih)+")").join("\n");
-    subj="Teslim Tarihi Asimi - "+tedUnvan;
-    body="Sayin "+tedUnvan+" Yetkilileri,\n\nAsagidaki siparis kalemleri, taahhut ettiginiz teslim tarihlerinde tarafimiza ulasmamistir:\n\n"+liste+"\n\nGuncel teslim tarihlerini ve gecikme nedenini en kisa surede bildirmenizi talep ediyoruz.\n\nForm Linki: "+link+(pwd?"\nSifre: "+pwd:"")+"\n\nSaygilarimizla,\nCimtas Hassas Isleme Satin Alma";
+    const liste=(kalemler||[]).map(o=>"  • ["+o.malzKodu+"] "+o.malzTanim+"  →  Söz Verilen: "+fmtDate(o.sozTarih)).join("\n");
+    subj="Teslim Tarihi Aşımı – Güncelleme Talebi – "+tedUnvan;
+    body="Sayın "+tedUnvan+" Yetkilileri,\n\n"
+      +"Aşağıda listelenen sipariş kalemlerimiz, tarafınızca taahhüt edilen teslim tarihlerinde tarafımıza ulaşmamıştır:\n\n"
+      +liste+"\n\n"
+      +"Güncel teslim tarihlerinizi ve varsa gecikme nedenini en kısa sürede bildirmenizi talep ediyoruz. "
+      +"Bilgileri aşağıdaki link üzerinden sisteme girebilirsiniz.\n\n"
+      +linkBlok
+      +imza;
+
   } else if(tip==="acil"){
-    const liste=(kalemler||[]).map(o=>"- ["+o.malzKodu+"] "+o.malzTanim).join("\n");
-    subj="ACİL: Uretim Kritik Siparis Hizlandirma - "+tedUnvan;
-    body="Sayin "+tedUnvan+" Yetkilileri,\n\nAsagidaki kalemler uretim sureclerimiz acisindan kritik oneme sahiptir ve teslimatlarinin hizlandirilmasi gerekmektedir:\n\n"+liste+"\n\nMevcut durumu ve en erken teslim tarihini bugün bildirmenizi rica ederiz.\n\nForm Linki: "+link+(pwd?"\nSifre: "+pwd:"")+"\n\nSaygilarimizla,\nCimtas Hassas Isleme Satin Alma";
+    const liste=(kalemler||[]).map(o=>"  • ["+o.malzKodu+"] "+o.malzTanim).join("\n");
+    subj="ACİL – Üretim Kritik Sipariş Hızlandırma Talebi – "+tedUnvan;
+    body="Sayın "+tedUnvan+" Yetkilileri,\n\n"
+      +"Aşağıda belirtilen sipariş kalemleri üretim süreçlerimiz açısından kritik öneme sahip olup teslimatın mümkün olan en erken tarihte gerçekleştirilmesi gerekmektedir:\n\n"
+      +liste+"\n\n"
+      +"Söz konusu kalemlerdeki gecikme, üretim hatlarımızda ciddi aksaklıklara yol açmaktadır. "
+      +"Mevcut durumu ve gerçekleşebilecek en erken teslim tarihini lütfen bugün bildirin.\n\n"
+      +linkBlok
+      +imza;
   }
   return {subj, body};
 }
@@ -437,26 +479,26 @@ function showLanding(){
 <!-- ═══════ SUPPLIER GATE ═══════ -->
 <script>
 async function showSupplierGate(supplierId){
-  const pwd=await getAyar("password")||"";
-  if(!pwd){await showSupplierView(supplierId);return;}
+  // Şifre her zaman tedarikçi kodu
   document.body.innerHTML=`
   <div class="dark-page">
     <div style="max-width:340px;width:100%">
       <div style="text-align:center;margin-bottom:24px"><img src="${LOGO_SRC}" style="height:30px"></div>
       <div style="background:#243b78;border-radius:12px;padding:24px;border:1px solid rgba(255,255,255,.1)">
-        <label class="lbl" style="color:rgba(255,255,255,.6)">Erişim Şifresi</label>
-        <input id="pwd-in" type="password" placeholder="Şifrenizi girin"
-          style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2);margin-bottom:10px"
+        <p style="color:rgba(255,255,255,.7);font-size:13px;margin-bottom:12px">Tedarikçi kodunuzu girin</p>
+        <input id="pwd-in" type="text" placeholder="Tedarikçi kodu"
+          style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2);margin-bottom:10px;font-family:monospace;letter-spacing:2px"
           onkeydown="if(event.key==='Enter')checkPwd('${esc(supplierId)}')" />
-        <p id="pwd-err" class="hidden" style="color:#fca5a5;font-size:12px;margin-bottom:8px">Yanlış şifre.</p>
+        <p id="pwd-err" class="hidden" style="color:#fca5a5;font-size:12px;margin-bottom:8px">Geçersiz kod. Lütfen tekrar deneyin.</p>
         <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="checkPwd('${esc(supplierId)}')">Giriş</button>
       </div>
     </div>
   </div>`;
 }
 async function checkPwd(id){
-  const pwd=await getAyar("password")||"";
-  if(document.getElementById("pwd-in").value===pwd) await showSupplierView(id);
+  const input=document.getElementById("pwd-in").value.trim();
+  // Şifre tedarikçi kodu
+  if(input===id){await showSupplierView(id);}
   else{document.getElementById("pwd-err").classList.remove("hidden");document.getElementById("pwd-in").style.borderColor="#fca5a5";}
 }
 </script>
@@ -752,8 +794,8 @@ function renderDash(){
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0" onclick="event.stopPropagation()">
           ${s.mail?`
-          <button class="btn btn-ghost btn-sm" onclick="sendMail('${esc(s.tedNo)}','${esc(s.tedUnvan)}','${esc(s.mail)}','hatirlatma',${hatNo},null)" title="${hatNo}. hatırlatma">
-            ✉ ${s.mailSayisi>0?"Hatırlatma":"Mail At"}
+          <button class="btn btn-ghost btn-sm" onclick="sendMail('${esc(s.tedNo)}','${esc(s.tedUnvan)}','${esc(s.mail)}','${s.mailSayisi===0?"ilk":"hatirlatma"}',${hatNo},null)">
+            ✉ ${s.mailSayisi===0?"İlk Mail At":s.mailSayisi+1+". Hatırlatma"}
           </button>`:'<span class="text-xs" style="color:var(--lgray)">Mail yok</span>'}
           ${gecikmisOrders.length&&s.mail?`<button class="btn btn-red btn-sm" onclick="sendMail('${esc(s.tedNo)}','${esc(s.tedUnvan)}','${esc(s.mail)}','gecikme',1,${JSON.stringify(gecikmisOrders.map(o=>({malzKodu:o.malzKodu,malzTanim:o.malzTanim,sozTarih:o.sozTarih}))).replace(/"/g,"&quot;")})">⚠ Gecikme</button>`:""}
         </div>
@@ -822,7 +864,7 @@ window.updateTopluBtn=function(){
 window.sendMail=async function(tedNo, tedUnvan, mail, tip, hatNo, kalemlerJson){
   const link=buildLink(tedNo);
   const kalemler=kalemlerJson?JSON.parse(kalemlerJson.replace(/&quot;/g,'"')):null;
-  const {subj,body}=buildMail(tedUnvan,tip,link,_D.pwd,hatNo,kalemler);
+  const {subj,body}=buildMail(tedUnvan,tip,link,tedNo,hatNo,kalemler);
   const emails=normalizeEmails(mail);
   if(!emails.length){flash("Mail adresi yok.","warn");return;}
   showMailPreview(emails.join("; "),subj,body,async()=>{
@@ -845,11 +887,12 @@ window.topluMailSec=function(){
     if(idx>=hedefler.length){flash(hedefler.length+" mail gönderildi.");loadDashData().then(renderDash);return;}
     const s=hedefler[idx++];
     const link=buildLink(s.tedNo);
+    const tip2=s.mailSayisi===0?"ilk":"hatirlatma";
     const hatNo=Math.min(s.mailSayisi+1,3);
-    const {subj,body}=buildMail(s.tedUnvan,"hatirlatma",link,_D.pwd,hatNo,null);
+    const {subj,body}=buildMail(s.tedUnvan,tip2,link,s.tedNo,hatNo,null);
     const emails=normalizeEmails(s.mail);
     openMailto("mailto:"+emails.join(";")+`?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`);
-    logMail(s.tedNo,s.tedUnvan,"hatirlatma",hatNo);
+    logMail(s.tedNo,s.tedUnvan,tip2,hatNo);
     setTimeout(next,1800);
   }
   next();
