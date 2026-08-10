@@ -802,26 +802,42 @@ function renderDash(){
         <span id="chev-${esc(s.tedNo)}" style="color:var(--lgray);font-size:12px;margin-left:4px">▶</span>
       </div>
       <div id="sdetail-${esc(s.tedNo)}" class="hidden" style="background:#FAFBFF;border-top:1px solid var(--border);padding:12px 14px">
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-sm btn-ghost det-filter active" data-ted="${esc(s.tedNo)}" data-f="hepsi" onclick="detFilter('${esc(s.tedNo)}','hepsi',this)">Hepsi</button>
+            <button class="btn btn-sm btn-ghost det-filter" data-ted="${esc(s.tedNo)}" data-f="gecikti" onclick="detFilter('${esc(s.tedNo)}','gecikti',this)" style="color:var(--red)">Gecikmiş</button>
+            <button class="btn btn-sm btn-ghost det-filter" data-ted="${esc(s.tedNo)}" data-f="girildi" onclick="detFilter('${esc(s.tedNo)}','girildi',this)" style="color:var(--green)">Girildi</button>
+            <button class="btn btn-sm btn-ghost det-filter" data-ted="${esc(s.tedNo)}" data-f="bekliyor" onclick="detFilter('${esc(s.tedNo)}','bekliyor',this)" style="color:var(--amber)">Bekliyor</button>
+          </div>
+          <select onchange="detSort('${esc(s.tedNo)}',this.value)" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:#fff">
+            <option value="default">Sırala: Varsayılan</option>
+            <option value="gecikme">Sırala: Gecikme (önce)</option>
+            <option value="sozTarih">Sırala: Söz Verilen Tarih</option>
+            <option value="malzKodu">Sırala: Malzeme Kodu</option>
+          </select>
+          <div style="position:relative;flex:1;min-width:140px">
+            <span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--lgray);font-size:12px">🔍</span>
+            <input type="text" placeholder="Malzeme ara..." style="padding:5px 8px 5px 26px;font-size:11px;width:100%" oninput="detSearch('${esc(s.tedNo)}',this.value)">
+          </div>
+        </div>
         <div class="tbl-wrap">
-          <table>
+          <table id="det-tbl-${esc(s.tedNo)}">
             <thead><tr>
               <th>Talep</th><th>Malz. Kodu</th><th>Malzeme</th><th>Bağlanmamış</th><th>Söz Verilen</th><th>Yeni Tarih</th><th>Giriş Tarihi</th><th>Not</th><th>Cevap</th><th>Gizle</th><th>Durum</th>
             </tr></thead>
-            <tbody>
+            <tbody id="det-body-${esc(s.tedNo)}">
               ${s.orders.map(o=>{
                 const r=_D.resp[o.id]||{};
                 const st2=orderStatus(o,r);
-                const tarih=r.yeniTarih||o.sozTarih;
-                const u=daysUntil(tarih);
                 const d=st2==="gecikti"?'<span class="badge b-red">Gecikmiş</span>':st2==="girildi"?'<span class="badge b-green">✓ Girildi</span>':'<span class="badge b-amber">Bekliyor</span>';
-                return `<tr class="${st2==="gecikti"?"late":st2==="girildi"?"done":""}${o.gizli?" gizli":""}">
+                return `<tr class="${st2==="gecikti"?"late":st2==="girildi"?"done":""}${o.gizli?" gizli":""}" data-st="${st2}" data-s="${esc((o.malzKodu+" "+o.malzTanim).toLowerCase())}">
                   <td class="mono">${esc(o.talepTipi)} ${esc(o.talepNo)}/${esc(o.strNo)}</td>
                   <td class="mono">${esc(o.malzKodu)}</td>
                   <td class="truncate" style="max-width:180px">${esc(o.malzTanim)}</td>
                   <td>${esc(o.bagMiktar)}</td>
                   <td>${fmtDate(o.sozTarih)}</td>
                   <td class="fw6">${r.yeniTarih?fmtDate(r.yeniTarih):"—"}</td>
-                  <td class="text-xs" style="color:var(--lgray)">${r.savedAt ? fmtDateTime(r.savedAt) : "—"}</td>
+                  <td class="text-xs" style="color:var(--lgray)">${r.savedAt?fmtDateTime(r.savedAt):"—"}</td>
                   <td style="max-width:100px;color:var(--gray)">${esc(r.not||"—")}</td>
                   <td>
                     ${r.adminNot?`<span style="font-size:11px;color:#92400e">💬 ${esc(r.adminNot)}</span> `:""}
@@ -843,7 +859,54 @@ function renderDash(){
     </div>`;
   }).join("");
 
-  window.toggleDetail=function(tedNo){
+  window.detFilter=function(tedNo, f, btn){
+  // Buton stilini güncelle
+  document.querySelectorAll(`.det-filter[data-ted="${tedNo}"]`).forEach(b=>{
+    b.classList.remove("active");b.style.background="";b.style.fontWeight="";
+  });
+  btn.classList.add("active");btn.style.background="#F1F5F9";btn.style.fontWeight="700";
+  // Satırları filtrele
+  document.querySelectorAll(`#det-body-${tedNo} tr`).forEach(tr=>{
+    const st=tr.dataset.st;
+    const vis=f==="hepsi"||st===f;
+    tr.style.display=vis?"":"none";
+  });
+};
+
+window.detSort=function(tedNo, sira){
+  const tbody=document.getElementById("det-body-"+tedNo);
+  if(!tbody) return;
+  const rows=Array.from(tbody.querySelectorAll("tr"));
+  rows.sort((a,b)=>{
+    if(sira==="gecikme"){
+      const order={gecikti:0,bekliyor:1,girildi:2};
+      return (order[a.dataset.st]||9)-(order[b.dataset.st]||9);
+    } else if(sira==="sozTarih"){
+      const ta=a.cells[4]?a.cells[4].textContent.trim():"";
+      const tb=b.cells[4]?b.cells[4].textContent.trim():"";
+      // DD.MM.YYYY → karşılaştır
+      const pa=ta.split(".");const pb=tb.split(".");
+      const da=pa.length===3?pa[2]+pa[1]+pa[0]:"99999999";
+      const db=pb.length===3?pb[2]+pb[1]+pb[0]:"99999999";
+      return da.localeCompare(db);
+    } else if(sira==="malzKodu"){
+      const ka=a.cells[1]?a.cells[1].textContent.trim():"";
+      const kb=b.cells[1]?b.cells[1].textContent.trim():"";
+      return ka.localeCompare(kb,"tr");
+    }
+    return 0;
+  });
+  rows.forEach(r=>tbody.appendChild(r));
+};
+
+window.detSearch=function(tedNo, q){
+  q=q.toLowerCase();
+  document.querySelectorAll(`#det-body-${tedNo} tr`).forEach(tr=>{
+    tr.style.display=!q||tr.dataset.s.includes(q)?"":"none";
+  });
+};
+
+window.toggleDetail=function(tedNo){
     const d=document.getElementById("sdetail-"+tedNo);
     const c=document.getElementById("chev-"+tedNo);
     if(!d) return;
