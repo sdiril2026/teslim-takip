@@ -650,7 +650,7 @@ async function showSupplierView(supplierId){
 
 <!-- ═══════ DASHBOARD ═══════ -->
 <script>
-let _D={orders:[],resp:{},sups:{},uploadedAt:null,pwd:"",haric:new Set(),mailLog:[],filter:"hepsi",search:""};
+let _D={orders:[],resp:{},sups:{},uploadedAt:null,pwd:"",haric:new Set(),mailLog:[],filter:"hepsi",search:"",sonYanitlar:[]};
 
 async function showDashboard(){
   document.body.innerHTML=`
@@ -664,6 +664,7 @@ async function showDashboard(){
   <div class="page">
     <div class="max">
       <div id="warn-area"></div>
+      <div id="bildirim-area" class="hidden mb16"></div>
       <div class="stats" id="stat-cards"></div>
       <div class="toolbar">
         <div class="search-box">
@@ -691,6 +692,14 @@ async function loadDashData(){
   _D.uploadedAt=uploadedAt; _D.pwd=pwd||"";
   _D.haric=new Set((haricRaw||"").split(",").map(s=>s.trim()).filter(Boolean));
   _D.mailLog=mailLog||[];
+
+  // uploadedAt'tan sonraki yanıtları çek
+  if(uploadedAt){
+    const rows=await sbGet("yanıtlar?select=*&saved_at=gte."+encodeURIComponent(uploadedAt+"T00:00:00")+"&order=saved_at.desc");
+    _D.sonYanitlar=rows||[];
+  } else {
+    _D.sonYanitlar=[];
+  }
 }
 
 function getSupStats(){
@@ -733,7 +742,46 @@ function renderDash(){
     </div>`:"";
   }
 
-  // STATS
+  // BİLDİRİM PANELİ
+  const bildirimEl=document.getElementById("bildirim-area");
+  if(bildirimEl && _D.sonYanitlar.length){
+    // Tedarikçi bazında grupla
+    const tedMap={};
+    _D.sonYanitlar.forEach(r=>{
+      const o=_D.orders.find(o=>o.id===r.siparis_id);
+      if(!o) return;
+      if(!tedMap[o.tedNo]) tedMap[o.tedNo]={tedUnvan:o.tedUnvan, count:0, sonZaman:r.saved_at};
+      tedMap[o.tedNo].count++;
+      if(r.saved_at > tedMap[o.tedNo].sonZaman) tedMap[o.tedNo].sonZaman=r.saved_at;
+    });
+    const girenler=Object.values(tedMap).sort((a,b)=>b.sonZaman.localeCompare(a.sonZaman));
+    const girmeyenler=getSupStats().filter(s=>s.status==="bekliyor"||s.status==="gecikti");
+
+    bildirimEl.classList.remove("hidden");
+    bildirimEl.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px">
+        <div class="fw7 text-sm mb8" style="color:#166534">✅ Bu hafta giriş yapanlar (${girenler.length})</div>
+        ${girenler.length===0?'<div class="text-xs" style="color:var(--lgray)">Henüz kimse giriş yapmadı.</div>':
+          girenler.map(t=>`
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #dcfce7">
+            <span class="text-sm fw6 truncate" style="max-width:200px">${esc(t.tedUnvan)}</span>
+            <span class="text-xs" style="color:#16a34a;white-space:nowrap;margin-left:8px">${t.count} kalem · ${fmtDateTime(t.sonZaman)}</span>
+          </div>`).join("")}
+      </div>
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px">
+        <div class="fw7 text-sm mb8" style="color:#991b1b">⏳ Henüz giriş yapmayan (${girmeyenler.length})</div>
+        ${girmeyenler.length===0?'<div class="text-xs" style="color:var(--lgray)">Harika! Herkes girmiş.</div>':
+          girmeyenler.map(s=>`
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #fecaca">
+            <span class="text-sm fw6 truncate" style="max-width:200px">${esc(s.tedUnvan)}</span>
+            <span class="badge b-red" style="font-size:9px">${s.status==="gecikti"?"Gecikmiş":"Bekliyor"}</span>
+          </div>`).join("")}
+      </div>
+    </div>`;
+  } else if(bildirimEl){
+    bildirimEl.classList.add("hidden");
+  }
   const totals={
     toplam:sups.length,
     tamamlandi:sups.filter(s=>s.status==="tamamlandi").length,
