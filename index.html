@@ -177,6 +177,7 @@ async function getOrders() {
 }
 async function uploadOrders(rows) {
   await sbDelete("siparisler?id=neq.NONE");
+  await sbDelete("mail_log?id=gt.0"); // Yeni liste = hatırlatma sayacı sıfırla
   const mapped = rows.map(r=>({
     id:r.id, talep_tipi:r.talepTipi, talep_no:r.talepNo, str_no:r.strNo,
     malz_kodu:r.malzKodu, malz_tanim:r.malzTanim, orig_qty:r.origQty,
@@ -667,7 +668,7 @@ async function showDashboard(){
       <div class="toolbar">
         <div class="search-box">
           <span class="search-icon">🔍</span>
-          <input type="text" placeholder="Tedarikçi ara..." oninput="setSearch(this.value)" id="search-inp">
+          <input type="text" placeholder="Tedarikçi, malzeme kodu veya tanım ara..." oninput="setSearch(this.value)" id="search-inp">
         </div>
         <button class="btn btn-ghost btn-sm" onclick="toggleAll(true)">Tümünü Seç</button>
         <button class="btn btn-ghost btn-sm" onclick="toggleAll(false)">Seçimi Kaldır</button>
@@ -754,7 +755,11 @@ function renderDash(){
   else if(_D.filter==="bekliyor") filtered=sups.filter(s=>s.status==="bekliyor"||s.status==="kismi");
   else if(_D.filter==="gecikti") filtered=sups.filter(s=>s.status==="gecikti");
   else if(_D.filter==="hatirlatma") filtered=sups.filter(s=>s.hatirlatmaGereken.length>0&&s.status!=="tamamlandi");
-  if(_D.search) filtered=filtered.filter(s=>s.tedUnvan.toLowerCase().includes(_D.search)||s.tedNo.includes(_D.search));
+  if(_D.search) filtered=filtered.filter(s=>
+    s.tedUnvan.toLowerCase().includes(_D.search)||
+    s.tedNo.includes(_D.search)||
+    s.orders.some(o=>o.malzKodu.toLowerCase().includes(_D.search)||o.malzTanim.toLowerCase().includes(_D.search))
+  );
 
   // Öncelik sırası: gecikti > hatırlatma > bekliyor > kismi > tamamlandi
   const ORDER={gecikti:0,bekliyor:1,kismi:2,tamamlandi:3};
@@ -854,12 +859,54 @@ function renderDash(){
             </tbody>
           </table>
         </div>
-        ${s.orders.filter(o=>o.acil).length?`<div class="mt8"><button class="btn btn-primary btn-sm" onclick="sendMail('${esc(s.tedNo)}','${esc(s.tedUnvan)}','${esc(s.mail)}','acil',1,${JSON.stringify(s.orders.filter(o=>o.acil).map(o=>({malzKodu:o.malzKodu,malzTanim:o.malzTanim}))).replace(/"/g,"&quot;")})">🚨 Acil Kalemlere Mail</button></div>`:""}
+        ${s.orders.filter(o=>o.acil).length?`
+        <div class="mt8" style="background:#fff5f5;border:1px solid #fecaca;border-radius:8px;padding:10px 14px">
+          <div class="fw7 text-xs" style="color:var(--red);margin-bottom:8px">🚨 Acil Kalemler — Seç ve Mail At</div>
+          ${s.orders.filter(o=>o.acil).map(o=>`
+          <label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer">
+            <input type="checkbox" class="acil-sel-chk" data-ted="${esc(s.tedNo)}" data-kodu="${esc(o.malzKodu)}" data-tanim="${esc(o.malzTanim)}" checked>
+            <span class="mono text-xs" style="color:#475569">${esc(o.malzKodu)}</span>
+            <span class="text-xs truncate">${esc(o.malzTanim)}</span>
+          </label>`).join("")}
+          <button class="btn btn-red btn-sm mt8" onclick="acilMailAt('${esc(s.tedNo)}','${esc(s.tedUnvan)}','${esc(s.mail)}')">
+            🚨 Seçili Acil Kalemlere Mail At
+          </button>
+        </div>`:""}
       </div>
     </div>`;
   }).join("");
 
-  window.detFilter=function(tedNo, f, btn){
+  window.acilMailAt=function(tedNo, tedUnvan, mail){
+  const secili=Array.from(document.querySelectorAll(`.acil-sel-chk[data-ted="${tedNo}"]:checked`));
+  if(!secili.length){flash("Hiç kalem seçilmedi.","warn");return;}
+  const kalemler=secili.map(el=>({malzKodu:el.dataset.kodu, malzTanim:el.dataset.tanim}));
+  const emails=normalizeEmails(mail);
+  if(!emails.length){flash("Mail adresi tanımlı değil.","warn");return;}
+  const link=buildLink(tedNo);
+  const liste=kalemler.map(o=>"  • ["+o.malzKodu+"] "+o.malzTanim).join("\n");
+  const subj="ACİL – Üretim Kritik Malzeme Temin Talebi – "+tedUnvan;
+  const body="Sayın "+tedUnvan+" Yetkilileri,\n\n"
+    +"Aşağıda belirtilen malzemelerin üretim süreçlerimiz açısından kritik öneme sahip olduğunu ve "
+    +"en kısa sürede temin edilmesi gerektiğini bildirmek isteriz:\n\n"
+    +liste+"\n\n"
+    +"Söz konusu malzemelerin teminindeki her gün gecikme, üretim hattımızda doğrudan aksaklığa "
+    +"yol açmakta olup bu durum ciddi operasyonel riskler barındırmaktadır.\n\n"
+    +"Bu nedenle:\n"
+    +"  1. Güncel teslim tarihini en kısa sürede iletmenizi,\n"
+    +"  2. Teslim tarihini öne çekme imkânı varsa bunu değerlendirmenizi,\n"
+    +"  3. Herhangi bir engel söz konusuysa bugün bizimle iletişime geçmenizi\n"
+    +"rica ediyoruz.\n\n"
+    +"Form Linki: "+link+"\nErişim Şifresi: "+tedNo+"\n\n"
+    +"Konunun aciliyeti nedeniyle bugün dönüş bekliyoruz.\n\n"
+    +"Saygılarımızla,\nÇimtaş Hassas İşleme Satın Alma";
+  showMailPreview(emails.join("; "), subj, body, async()=>{
+    openMailto("mailto:"+emails.join(";")+`?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`);
+    await logMail(tedNo, tedUnvan, "acil", 1);
+    flash("Acil mail gönderildi.");
+  });
+};
+
+window.detFilter=function(tedNo, f, btn){
   // Buton stilini güncelle
   document.querySelectorAll(`.det-filter[data-ted="${tedNo}"]`).forEach(b=>{
     b.classList.remove("active");b.style.background="";b.style.fontWeight="";
